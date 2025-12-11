@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Banking FAQ Chatbot</title>
+  <style>
+    :root {
+      --bg: #0f172a;          /* slate-900 */
+      --panel: #111827;       /* gray-900 */
+      --panel-2: #1f2937;     /* gray-800 */
+      --text: #e5e7eb;        /* gray-200 */
+      --muted: #9ca3af;       /* gray-400 */
+      --primary: #22c55e;     /* green-500 */
+      --primary-600: #16a34a; /* green-600 */
+      --danger: #ef4444;      /* red-500 */
+      --bubble-user: #0ea5e9; /* sky-500 */
+      --bubble-bot: #374151;  /* gray-700 */
+      --accent: #38bdf8;      /* sky-400 */
+    }
+
+    [data-theme="light"] {
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --panel-2: #f9fafb;
+      --text: #0f172a;
+      --muted: #475569;
+      --bubble-user: #38bdf8;
+      --bubble-bot: #e5e7eb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 80% -10%, rgba(34,197,94,0.12), transparent 60%),
+                  radial-gradient(1000px 700px at 20% -20%, rgba(14,165,233,0.10), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(1000px, 100%);
+      height: min(90vh, 1000px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      backdrop-filter: blur(6px);
+    }
+
+    .header {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.0));
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: radial-gradient(circle at 30% 30%, #34d399, #22c55e 40%, #16a34a 70%);
+      box-shadow: 0 6px 14px rgba(34,197,94,0.35);
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .title { font-weight: 700; letter-spacing: 0.3px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      background: var(--panel-2);
+      cursor: pointer;
+      user-select: none;
+      transition: 120ms all ease;
+      font-size: 14px;
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: linear-gradient(180deg, #22c55e, #16a34a); border-color: rgba(34,197,94,0.6); color: #071b0f; font-weight: 700; }
+    .btn.ghost { background: transparent; }
+
+    .suggestions {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));
+    }
+
+    .chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .chip:hover { filter: brightness(1.05); }
+
+    .messages {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: linear-gradient(0deg, rgba(34,197,94,0.05), transparent 200px) no-repeat;
+    }
+
+    .msg { display: flex; gap: 10px; align-items: flex-start; animation: fadeIn 160ms ease-out; }
+    .msg .avatar { width: 34px; height: 34px; border-radius: 50%; flex: 0 0 34px; display: grid; place-items: center; font-size: 14px; font-weight: 700; color: white; box-shadow: 0 6px 14px rgba(0,0,0,0.3); }
+    .msg.user .avatar { background: var(--bubble-user); }
+    .msg.bot .avatar { background: var(--primary-600); }
+
+    .bubble { padding: 12px 14px; border-radius: 12px; max-width: 80ch; line-height: 1.4; border: 1px solid rgba(255,255,255,0.08); position: relative; }
+    .msg.user .bubble { background: linear-gradient(180deg, rgba(14,165,233,0.18), rgba(14,165,233,0.10)); }
+    .msg.bot .bubble { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04)); }
+
+    .meta { color: var(--muted); font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 10px; }
+
+    .meta .meter { width: 120px; height: 6px; background: rgba(255,255,255,0.12); border-radius: 6px; overflow: hidden; }
+    .meta .meter > span { display: block; height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b 40%, #22c55e); width: 0%; transition: width 200ms ease; }
+
+    .feedback { display: inline-flex; gap: 6px; }
+    .thumb { width: 28px; height: 24px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: var(--panel-2); color: var(--text); cursor: pointer; font-size: 14px; display: inline-grid; place-items: center; }
+    .thumb.active { outline: 2px solid #22c55e; }
+
+    .input {
+      padding: 10px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));
+      position: relative;
+    }
+
+    .textbox { width: 100%; resize: none; min-height: 48px; max-height: 120px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: var(--panel); color: var(--text); outline: none; transition: 120ms border-color ease; font-size: 15px; }
+    .textbox:focus { border-color: rgba(34,197,94,0.5); box-shadow: 0 0 0 3px rgba(34,197,94,0.18); }
+
+    .autocomplete {
+      position: absolute;
+      left: 12px; right: 200px; bottom: 62px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+      display: none;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 5;
+    }
+
+    .ac-item { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; font-size: 14px; }
+    .ac-item:last-child { border-bottom: 0; }
+    .ac-item:hover { background: rgba(56,189,248,0.12); }
+    .ac-empty { padding: 10px 12px; color: var(--muted); font-size: 13px; }
+
+    .typing { color: var(--muted); font-style: italic; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 640px) {
+      .app { height: 94vh; }
+      .bubble { max-width: 100%; }
+      .input { grid-template-columns: 1fr auto; }
+      .btn.suggest { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" role="main" aria-label="AI Banking Chatbot">
+    <header class="header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">$</div>
+        <div>
+          <div class="title">AI Banking FAQ Chatbot</div>
+          <div class="subtitle">Ask questions about accounts, cards, transfers, and more</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="btnClear" title="Clear conversation">Clear</button>
+        <button class="btn ghost" id="btnExport" title="Export chat as text">Export</button>
+        <button class="btn" id="btnTheme" title="Toggle light/dark">Toggle Theme</button>
+      </div>
+    </header>
+
+    <section class="suggestions" aria-label="Quick examples">
+      <span class="chip" data-q="hello">Hello</span>
+      <span class="chip" data-q="how to open a savings account?">Open savings account</span>
+      <span class="chip" data-q="how to reset my online banking password?">Reset password</span>
+      <span class="chip" data-q="what are atm withdrawal limits?">ATM limits</span>
+      <span class="chip" data-q="how to dispute a transaction?">Dispute transaction</span>
+      <span class="chip" data-q="bye">Bye</span>
+    </section>
+
+    <section id="messages" class="messages" aria-live="polite" aria-atomic="false"></section>
+
+    <footer class="input">
+      <textarea id="input" class="textbox" placeholder="Type your question… (e.g., How to open a savings account?)" aria-label="Message input"></textarea>
+      <div class="autocomplete" id="autocomplete"></div>
+      <button class="btn suggest" id="btnSuggest" title="Show examples">Examples</button>
+      <button class="btn primary" id="btnSend" title="Send message">Send</button>
+    </footer>
+  </main>
+
+  <script>
+    // Embedded dataset
+    const DATASET = [
+      {"question": "hello", "answer": "Hello! How can I help you with your banking today?"},
+      {"question": "hi", "answer": "Hi there! Ask me anything about accounts, cards, transfers, or fees."},
+      {"question": "good morning", "answer": "Good morning! How can I assist you today?"},
+      {"question": "good afternoon", "answer": "Good afternoon! What banking question can I answer?"},
+      {"question": "good evening", "answer": "Good evening! How can I help?"},
+
+      {"question": "bye", "answer": "Goodbye! If you have more questions later, just come back and ask."},
+      {"question": "goodbye", "answer": "Take care! I'm here whenever you need help."},
+      {"question": "see you", "answer": "See you! Have a great day."},
+
+      {"question": "how to open a savings account?", "answer": "To open a savings account, bring a valid ID and proof of address to any branch or apply online via our website."},
+      {"question": "what are branch working hours?", "answer": "Branches are typically open Mon–Fri 9:00–17:00 and Sat 10:00–14:00. Check your local branch for exact hours."},
+      {"question": "what is the minimum balance for savings?", "answer": "The minimum balance for a savings account is $100. Falling below may incur a monthly fee."},
+      {"question": "how to reset my online banking password?", "answer": "Use the 'Forgot Password' link on the sign-in page and follow the verification steps."},
+      {"question": "how to block my lost debit card?", "answer": "Immediately call our 24/7 helpline or use the mobile app to block the card, then request a replacement."},
+      {"question": "what are international transfer fees?", "answer": "International transfers typically cost $10–$25 plus FX markup. Exact fees depend on destination and amount."},
+      {"question": "how to check my account balance?", "answer": "You can check your balance via the mobile app, online banking, ATMs, or by calling customer support."},
+      {"question": "what interest rate do you offer on savings?", "answer": "Savings interest rates vary by tier and market conditions. Refer to our Rates page for current APY."},
+      {"question": "how to apply for a personal loan?", "answer": "Apply online or at a branch. You will need ID, proof of income, and credit evaluation."},
+      {"question": "how to dispute a transaction?", "answer": "Report unauthorized charges within 60 days via the app or support. We will investigate and issue provisional credit if eligible."},
+      {"question": "do you have mobile check deposit?", "answer": "Yes, you can deposit checks using the mobile app by photographing the front and back of the check."},
+      {"question": "how to update my address?", "answer": "Update your address in the mobile app, online banking profile, or by visiting a branch with valid ID."},
+      {"question": "what are atm withdrawal limits?", "answer": "Daily ATM withdrawal limits are typically $500–$1000 depending on your account. Check your card settings in the app."},
+      {"question": "how to get a bank statement?", "answer": "Download statements from online banking (Documents section) or request printed copies at a branch."},
+      {"question": "is my money insured?", "answer": "Deposits are insured up to applicable limits (e.g., FDIC up to $250,000 per depositor for U.S. banks)."},
+      {"question": "how to enable two factor authentication?", "answer": "Go to Security settings in your online banking or app and enable 2FA via SMS or authenticator app."},
+      {"question": "how to change my debit card pin?", "answer": "Change your PIN at supported ATMs or via the mobile app's card management section."},
+      {"question": "do you charge monthly maintenance fees?", "answer": "Some accounts have monthly fees that can be waived by meeting criteria such as minimum balance or direct deposit."},
+      {"question": "what documents are needed to open an account?", "answer": "You typically need government-issued ID, proof of address, and tax identification number (if applicable)."},
+      {"question": "how long do wire transfers take?", "answer": "Domestic wires usually complete the same day if sent before cutoff; international wires can take 1–3 business days."},
+
+      {"question": "what is overdraft fee?", "answer": "An overdraft fee is charged when your account balance goes below zero. You can opt-in or set alerts to avoid it."},
+      {"question": "how to set up direct deposit?", "answer": "Provide your employer with your account and routing numbers found in the app or on a check."},
+      {"question": "how to activate my new debit card?", "answer": "Activate in the mobile app, online banking, or by calling the number on the card."},
+      {"question": "can i increase my credit card limit?", "answer": "Yes, request a credit limit increase via the app or online; approval depends on income and credit history."}
+    ];
+
+    // Local persistence helpers
+    const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+
+    // Text utilities
+    const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const tokens = (s) => normalize(s).split(' ').filter(Boolean);
+
+    // Simple token Jaccard similarity
+    function jaccard(a, b) {
+      const A = new Set(tokens(a));
+      const B = new Set(tokens(b));
+      if (!A.size && !B.size) return 1;
+      const inter = [...A].filter(x => B.has(x)).length;
+      const union = new Set([...A, ...B]).size;
+      return inter / union;
+    }
+
+    function findBestAnswer(query) {
+      const nq = normalize(query);
+      let bestScore = -1; let best = null;
+      for (const qa of DATASET) {
+        const qn = normalize(qa.question);
+        if (nq && (qn.includes(nq) || nq.includes(qn))) return { answer: qa.answer, score: 1, q: qa.question };
+      }
+      for (const qa of DATASET) {
+        const score = jaccard(query, qa.question);
+        if (score > bestScore) { bestScore = score; best = qa; }
+      }
+      return { answer: best?.answer ?? null, score: bestScore, q: best?.question ?? null };
+    }
+
+    // UI elements
+    const elMsgs = document.getElementById('messages');
+    const elInput = document.getElementById('input');
+    const btnSend = document.getElementById('btnSend');
+    const btnSuggest = document.getElementById('btnSuggest');
+    const btnClear = document.getElementById('btnClear');
+    const btnExport = document.getElementById('btnExport');
+    const btnTheme = document.getElementById('btnTheme');
+    const elAC = document.getElementById('autocomplete');
+
+    let chatLog = [];
+    let theme = load('chat_theme', 'dark');
+    if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+
+    function addMessage(role, text, opts = {}) {
+      const msg = document.createElement('div');
+      msg.className = `msg ${role}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = role === 'user' ? 'U' : 'A';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
+
+      msg.appendChild(avatar);
+      msg.appendChild(bubble);
+      elMsgs.appendChild(msg);
+      elMsgs.scrollTop = elMsgs.scrollHeight;
+
+      const entry = { role, text, ts: Date.now() };
+      chatLog.push(entry);
+      return { msg, bubble };
+    }
+
+    function addMeta(container, score, qKey) {
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const conf = document.createElement('span');
+      conf.textContent = `confidence: ${(score*100).toFixed(0)}%`;
+
+      const meter = document.createElement('div');
+      meter.className = 'meter';
+      const bar = document.createElement('span');
+      bar.style.width = `${Math.max(0, Math.min(100, score*100))}%`;
+      meter.appendChild(bar);
+
+      const fb = document.createElement('div');
+      fb.className = 'feedback';
+      const up = document.createElement('button'); up.className = 'thumb'; up.textContent = '👍';
+      const down = document.createElement('button'); down.className = 'thumb'; down.textContent = '👎';
+
+      const key = `fb_${normalize(qKey||'general')}`;
+      const state = load(key, { up: 0, down: 0, voted: null });
+      function renderState() {
+        up.classList.toggle('active', state.voted === 'up');
+        down.classList.toggle('active', state.voted === 'down');
+        up.title = `Helpful (${state.up})`; down.title = `Not helpful (${state.down})`;
+      }
+      up.addEventListener('click', () => {
+        if (state.voted === 'up') { state.up = Math.max(0, state.up-1); state.voted = null; }
+        else { state.up += 1; if (state.voted === 'down') state.down = Math.max(0, state.down-1); state.voted = 'up'; }
+        save(key, state); renderState();
+      });
+      down.addEventListener('click', () => {
+        if (state.voted === 'down') { state.down = Math.max(0, state.down-1); state.voted = null; }
+        else { state.down += 1; if (state.voted === 'up') state.up = Math.max(0, state.up-1); state.voted = 'down'; }
+        save(key, state); renderState();
+      });
+      renderState();
+
+      fb.appendChild(up); fb.appendChild(down);
+      meta.appendChild(conf); meta.appendChild(meter); meta.appendChild(fb);
+      container.appendChild(meta);
+    }
+
+    function showTyping() {
+      return addMessage('bot', 'typing…');
+    }
+    function replaceTyping(handle, text) {
+      handle.bubble.textContent = text;
+    }
+
+    function showExamples() {
+      const examples = DATASET.slice(0, 8).map(x => `• ${x.question}`).join('\n');
+      addMessage('bot', `Try asking one of the following questions:\n\n${examples}`);
+    }
+
+    function clearChat() {
+      elMsgs.innerHTML = '';
+      chatLog = [];
+      greet();
+    }
+
+    function exportChat() {
+      const lines = chatLog.map(m => `${new Date(m.ts).toLocaleString()}\t${m.role.toUpperCase()}: ${m.text}`);
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `chat-${new Date().toISOString().replace(/[:.]/g,'-')}.txt`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function toggleTheme() {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      else document.documentElement.removeAttribute('data-theme');
+      save('chat_theme', theme);
+    }
+
+    function autocomplete(q) {
+      const qn = normalize(q);
+      if (!qn) { elAC.style.display = 'none'; elAC.innerHTML=''; return; }
+      const matches = DATASET
+        .map(d => d.question)
+        .filter(s => normalize(s).includes(qn))
+        .slice(0, 6);
+      if (matches.length === 0) {
+        elAC.style.display = 'none'; elAC.innerHTML=''; return;
+      }
+      elAC.innerHTML = matches.map(m => `<div class="ac-item" data-q="${m.replace(/"/g,'&quot;')}">${m}</div>`).join('');
+      elAC.style.display = 'block';
+    }
+
+    function hideAutocomplete() { elAC.style.display = 'none'; elAC.innerHTML=''; }
+
+    function send(textOverride) {
+      const text = (textOverride ?? elInput.value).trim();
+      if (!text) return;
+      addMessage('user', text);
+      elInput.value = '';
+      hideAutocomplete();
+
+      const typing = showTyping();
+      setTimeout(() => {
+        const { answer, score, q } = findBestAnswer(text);
+        const final = answer && score >= 0.5 ? answer : "I'm not sure. Please try rephrasing or click Examples to see sample questions.";
+        replaceTyping(typing, final);
+        addMeta(typing.msg, answer ? score : 0, q);
+      }, 300 + Math.random()*300);
+    }
+
+    function greet() {
+      addMessage('bot', "Hello! I can answer common banking questions. Ask me about accounts, cards, transfers, fees, and more.");
+      const meta = document.createElement('div'); meta.className='meta'; meta.textContent = 'Tip: Press Enter to send, Shift+Enter for a new line.'; elMsgs.appendChild(meta);
+    }
+
+    // Event bindings
+    btnSend.addEventListener('click', () => send());
+    btnSuggest.addEventListener('click', showExamples);
+    btnClear.addEventListener('click', clearChat);
+    btnExport.addEventListener('click', exportChat);
+    btnTheme.addEventListener('click', toggleTheme);
+
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => send(chip.getAttribute('data-q')));
+    });
+
+    elInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    elInput.addEventListener('input', (e) => autocomplete(e.target.value));
+    document.addEventListener('click', (e) => {
+      if (!elAC.contains(e.target) && e.target !== elInput) hideAutocomplete();
+    });
+    elAC.addEventListener('click', (e) => {
+      const item = e.target.closest('.ac-item');
+      if (!item) return;
+      elInput.value = item.getAttribute('data-q');
+      hideAutocomplete();
+      elInput.focus();
+    });
+
+    // Initial greeting
+    greet();
+  </script>
+</body>
+</html>
