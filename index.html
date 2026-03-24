@@ -52,7 +52,7 @@
       border-radius: 16px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto auto 1fr auto auto;
       backdrop-filter: blur(6px);
     }
 
@@ -112,6 +112,7 @@
     }
     .btn:hover { filter: brightness(1.05); }
     .btn:active { transform: translateY(1px); }
+    .btn.active { outline: 2px solid rgba(255,255,255,0.12); transform: translateY(0); box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
     .btn.primary { background: linear-gradient(180deg, #22c55e, #16a34a); border-color: rgba(34,197,94,0.6); color: #071b0f; font-weight: 700; }
     .btn.ghost { background: transparent; }
 
@@ -197,6 +198,95 @@
 
     .typing { color: var(--muted); font-style: italic; }
 
+    /* PERSONALIZED RECOMMENDATIONS PANEL - UNIQUE FEATURE */
+    .recommendations {
+      padding: 12px 16px;
+      border-top: 1px solid rgba(34,197,94,0.3);
+      background: linear-gradient(180deg, rgba(34,197,94,0.08), rgba(34,197,94,0.04));
+      animation: slideUp 300ms ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .rec-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .rec-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #22c55e;
+      letter-spacing: 0.3px;
+    }
+
+    .rec-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      opacity: 0.7;
+      transition: opacity 200ms;
+    }
+
+    .rec-close:hover { opacity: 1; }
+
+    .rec-items {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .rec-card {
+      padding: 10px 12px;
+      border: 1px solid rgba(34,197,94,0.3);
+      border-radius: 8px;
+      background: rgba(34,197,94,0.05);
+      cursor: pointer;
+      transition: all 200ms ease;
+    }
+
+    .rec-card:hover {
+      background: rgba(34,197,94,0.12);
+      border-color: rgba(34,197,94,0.6);
+      transform: translateY(-2px);
+    }
+
+    .rec-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #22c55e;
+      margin-bottom: 4px;
+    }
+
+    .rec-card-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .rec-card-action {
+      font-size: 11px;
+      color: #38bdf8;
+      font-weight: 600;
+      display: inline-block;
+      padding: 2px 6px;
+      background: rgba(56,189,248,0.1);
+      border-radius: 4px;
+    }
+
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     @media (max-width: 640px) {
@@ -220,6 +310,11 @@
       <div class="toolbar">
         <button class="btn ghost" id="btnClear" title="Clear conversation">Clear</button>
         <button class="btn ghost" id="btnExport" title="Export chat as text">Export</button>
+        <button class="btn ghost" id="btnReloadData" title="Reload dataset">Reload Data</button>
+        <span id="datasetStatus" style="font-size:12px;color:var(--muted);margin-left:6px"></span>
+        <button class="btn" id="btnPlayServer" title="Play last response via server TTS" style="display:none">🔈 Play (server)</button>
+        <button class="btn" id="btnMic" title="Use microphone">🎙️ Voice</button>
+        <button class="btn" id="btnTTS" title="Toggle speech output">🔊 TTS</button>
         <button class="btn" id="btnTheme" title="Toggle light/dark">Toggle Theme</button>
       </div>
     </header>
@@ -235,6 +330,14 @@
 
     <section id="messages" class="messages" aria-live="polite" aria-atomic="false"></section>
 
+    <section id="recommendations" class="recommendations" aria-label="Personalized recommendations" style="display: none;">
+      <div class="rec-header">
+        <span class="rec-title">💡 Personalized for You</span>
+        <button class="rec-close" onclick="document.getElementById('recommendations').style.display='none'">✕</button>
+      </div>
+      <div id="recItems" class="rec-items"></div>
+    </section>
+
     <footer class="input">
       <textarea id="input" class="textbox" placeholder="Type your question… (e.g., How to open a savings account?)" aria-label="Message input"></textarea>
       <div class="autocomplete" id="autocomplete"></div>
@@ -244,8 +347,8 @@
   </main>
 
   <script>
-    // Embedded dataset
-    const DATASET = [
+    // Embedded dataset (as a fallback only)
+    const DEFAULT_DATASET = [
       {"question": "hello", "answer": "Hello! How can I help you with your banking today?"},
       {"question": "hi", "answer": "Hi there! Ask me anything about accounts, cards, transfers, or fees."},
       {"question": "good morning", "answer": "Good morning! How can I assist you today?"},
@@ -282,6 +385,133 @@
       {"question": "how to activate my new debit card?", "answer": "Activate in the mobile app, online banking, or by calling the number on the card."},
       {"question": "can i increase my credit card limit?", "answer": "Yes, request a credit limit increase via the app or online; approval depends on income and credit history."}
     ];
+
+    // Runtime dataset (can be replaced by server dataset)
+    let DATASET = DEFAULT_DATASET;
+    let serverDataset = false;
+
+    async function loadServerDataset() {
+      try {
+        const res = await fetch('/api/dataset', { cache: 'no-store' });
+        if (res && res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json) && json.length) {
+            DATASET = json;
+            serverDataset = true;
+            console.info('Loaded dataset from server:', DATASET.length, 'items');
+            setDatasetStatus('Loaded dataset from server');
+
+            // Replace suggestion chips with top items from server dataset
+            const chips = document.querySelector('.suggestions');
+            if (chips) {
+              chips.innerHTML = '';
+              for (const q of DATASET.slice(0, 6)) {
+                const span = document.createElement('span');
+                span.className = 'chip';
+                span.setAttribute('data-q', q.question);
+                span.textContent = q.question.length > 30 ? q.question.slice(0, 30) + '…' : q.question;
+                span.addEventListener('click', () => send(q.question));
+                chips.appendChild(span);
+              }
+            }
+
+            // Update tip meta if present
+            const meta = document.querySelector('#messages .meta');
+            if (meta) meta.textContent = 'Dataset loaded from server. Tip: Press Enter to send, Shift+Enter for a new line.';
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load server dataset', e);
+      }
+
+      // If server dataset not available, try local dataset.json file
+      try {
+        const lf = await fetchWithTimeout('./dataset.json', { cache: 'no-store' }, 3000);
+        if (lf && lf.ok) {
+          let ljson = null;
+          try {
+            ljson = await lf.json();
+          } catch (je) {
+            // Not JSON: try CSV parse as fallback
+            try {
+              const txt = await lf.text();
+              const lines = txt.split(/\r?\n/).filter(Boolean);
+              const header = lines[0].split(',').map(h => h.trim());
+              const data = [];
+              for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                const row = {};
+                for (let j = 0; j < header.length; j++) {
+                  row[header[j]] = (cols[j] || '').trim();
+                }
+                const q = row.Question || row.question || row.Question?.trim?.() || null;
+                const a = row.Answer || row.answer || row.Answer?.trim?.() || null;
+                if (q && a) data.push({ question: q, answer: a });
+              }
+              if (data.length) ljson = data;
+            } catch (ce) {
+              console.warn('Local dataset is not JSON and CSV parse failed', ce);
+            }
+          }
+
+          if (Array.isArray(ljson) && ljson.length) {
+            DATASET = ljson;
+            serverDataset = false;
+            setDatasetStatus('Loaded dataset from local dataset.json');
+            console.info('Loaded dataset from dataset.json:', DATASET.length, 'items');
+
+            const chips = document.querySelector('.suggestions');
+            if (chips) {
+              chips.innerHTML = '';
+              for (const q of DATASET.slice(0, 6)) {
+                const span = document.createElement('span');
+                span.className = 'chip';
+                span.setAttribute('data-q', q.question);
+                span.textContent = q.question.length > 30 ? q.question.slice(0, 30) + '…' : q.question;
+                span.addEventListener('click', () => send(q.question));
+                chips.appendChild(span);
+              }
+            }
+
+            const meta = document.querySelector('#messages .meta');
+            if (meta) meta.textContent = 'Dataset loaded from local dataset.json. Tip: Press Enter to send, Shift+Enter for a new line.';
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load local dataset.json', e);
+      }
+
+      // Fallback: use embedded DEFAULT_DATASET
+      DATASET = DEFAULT_DATASET;
+      serverDataset = false;
+      setDatasetStatus('Using embedded fallback dataset');
+      console.info('Using embedded fallback dataset:', DATASET.length, 'items');
+      return false;
+    }
+
+    // Fetch wrapper with timeout
+    async function fetchWithTimeout(url, options = {}, timeout = 4000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      try {
+        const res = await fetch(url, { signal: controller.signal, ...options });
+        clearTimeout(id);
+        return res;
+      } catch (e) {
+        clearTimeout(id);
+        throw e;
+      }
+    }
+
+    function setDatasetStatus(s) {
+      const el = document.getElementById('datasetStatus');
+      if (el) el.textContent = s;
+    }
+
+    // Attempt to fetch dataset from server (non-blocking)
+    loadServerDataset();
 
     // Local persistence helpers
     const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -444,6 +674,12 @@
 
     function hideAutocomplete() { elAC.style.display = 'none'; elAC.innerHTML=''; }
 
+    // Fetch and display personalized recommendations - DISABLED
+    function showRecommendations() {
+      // Recommendations panel hidden
+      return;
+    }
+
     function send(textOverride) {
       const text = (textOverride ?? elInput.value).trim();
       if (!text) return;
@@ -451,18 +687,123 @@
       elInput.value = '';
       hideAutocomplete();
 
+      // First, try a confident local match (from DATASET) — reply immediately if found
+      const local = findBestAnswer(text);
+      if (local && local.answer && local.score >= 0.5) {
+        console.debug('Local match found', local);
+        const typing = showTyping();
+        // Use existing onFinalResponse flow to ensure addMeta + TTS
+        const onFinalResponse = (finalText, score = 0, q = null) => {
+          try {
+            console.debug('Replacing typing bubble with local response', finalText);
+            replaceTyping(typing, finalText);
+          } catch (e) {
+            console.error('replaceTyping failed for local response', e);
+            // As a fallback add a new message
+            addMessage('bot', finalText);
+          }
+          try { addMeta(typing.msg, score, q); } catch (e) { console.error('addMeta failed', e); }
+          // Show personalized recommendations based on conversation
+          showRecommendations();
+        };
+        onFinalResponse(local.answer, local.score, local.q);
+        return;
+      }
+
       const typing = showTyping();
-      setTimeout(() => {
+
+      // Safety: ensure the "typing…" bubble is always replaced even on network failures or timeouts
+      let settled = false;
+      const onFinalResponse = (finalText, score = 0, q = null, note = null) => {
+        if (settled) return;
+        settled = true;
+        try {
+          const out = note ? `${note} ${finalText}` : finalText;
+          replaceTyping(typing, out);
+          try { addMeta(typing.msg, score, q); } catch (e) { console.error('addMeta failed', e); }
+          // Show personalized recommendations based on conversation
+          showRecommendations();
+        } catch (e) {
+          console.error('replaceTyping failed', e);
+          // As a last resort append a visible message element
+          addMessage('bot', finalText + (note ? ` (${note})` : ''));
+          // Show personalized recommendations even on error
+          showRecommendations();
+        }
+      };
+
+      console.debug('send(): no confident local match, querying server...');
+
+      // Use fetch but add a timeout fallback (6s)
+      const fetchPromise = fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      }).then(r => {
+        if (!r.ok) throw new Error('Server returned ' + r.status);
+        const ct = r.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error('Unexpected content-type: ' + ct);
+        return r.json();
+      }).then(res => {
+        console.debug('send(): server responded', res);
+        try {
+          if (res && res.answer) {
+            onFinalResponse(res.answer, res.score ?? 0, res.question ?? text);
+          } else {
+            const { answer, score, q } = findBestAnswer(text);
+            const final = answer && score >= 0.5 ? answer : "I'm not sure. Please try rephrasing or click Examples to see sample questions.";
+            onFinalResponse(final, answer ? score : 0, q);
+          }
+        } catch (e) {
+          console.error('Error processing server response', e);
+          const { answer, score, q } = findBestAnswer(text);
+          const final = answer && score >= 0.5 ? answer : "I'm not sure. Please try rephrasing or click Examples to see sample questions.";
+          onFinalResponse(final, answer ? score : 0, q);
+        }
+      });
+
+      const timeoutId = setTimeout(() => {
+        if (settled) return;
+        console.warn('Chat API timeout; falling back to local response');
+        const { answer, score, q } = findBestAnswer(text);
+        const final = answer && score >= 0.5 ? answer : "The server is taking too long. Please try again later or click Examples.";
+        onFinalResponse(final, answer ? score : 0, q, '(offline)');
+      }, 6000);
+
+      fetchPromise.catch(err => {
+        if (settled) return;
+        console.warn('Chat API failed, falling back to local:', err);
         const { answer, score, q } = findBestAnswer(text);
         const final = answer && score >= 0.5 ? answer : "I'm not sure. Please try rephrasing or click Examples to see sample questions.";
-        replaceTyping(typing, final);
-        addMeta(typing.msg, answer ? score : 0, q);
-      }, 300 + Math.random()*300);
+        onFinalResponse(final, answer ? score : 0, q, '(error)');
+      }).finally(() => {
+        clearTimeout(timeoutId);
+      });
     }
 
     function greet() {
-      addMessage('bot', "Hello! I can answer common banking questions. Ask me about accounts, cards, transfers, fees, and more.");
-      const meta = document.createElement('div'); meta.className='meta'; meta.textContent = 'Tip: Press Enter to send, Shift+Enter for a new line.'; elMsgs.appendChild(meta);
+      // Fetch greeting from server (time-based)
+      fetch('/api/greeting', { cache: 'no-store' })
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
+        .then(j => {
+          console.log('✓ Greeting received:', j);
+          const greeting = j?.greeting || "Hello! I can answer common banking questions. Ask me about accounts, cards, transfers, fees, and more.";
+          addMessage('bot', greeting);
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          meta.textContent = serverDataset ? 'Dataset loaded from server. Tip: Press Enter to send, Shift+Enter for a new line.' : 'Tip: Press Enter to send, Shift+Enter for a new line. (Using local dataset)';
+          elMsgs.appendChild(meta);
+        })
+        .catch((err) => {
+          console.warn('✗ Greeting fetch failed:', err);
+          addMessage('bot', "Hello! I can answer common banking questions. Ask me about accounts, cards, transfers, fees, and more.");
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          meta.textContent = 'Tip: Press Enter to send, Shift+Enter for a new line.';
+          elMsgs.appendChild(meta);
+        });
     }
 
     // Event bindings
@@ -471,6 +812,15 @@
     btnClear.addEventListener('click', clearChat);
     btnExport.addEventListener('click', exportChat);
     btnTheme.addEventListener('click', toggleTheme);
+    const btnReloadData = document.getElementById('btnReloadData');
+    if (btnReloadData) {
+      btnReloadData.addEventListener('click', async () => {
+        setDatasetStatus('Reloading dataset...');
+        const ok = await loadServerDataset();
+        if (ok) setDatasetStatus('Dataset loaded (server or local)');
+        else setDatasetStatus('Using embedded fallback dataset');
+      });
+    }
 
     document.querySelectorAll('.chip').forEach(chip => {
       chip.addEventListener('click', () => send(chip.getAttribute('data-q')));
@@ -491,8 +841,287 @@
       elInput.focus();
     });
 
-    // Initial greeting
-    greet();
+    // Voice controls: Web Speech API (STT) and SpeechSynthesis (TTS)
+    const btnMic = document.getElementById('btnMic');
+    const btnTTS = document.getElementById('btnTTS');
+    const btnPlayServer = document.getElementById('btnPlayServer');
+    let recognition = null;
+    let recognizing = false;
+    let ttsEnabled = load('tts_enabled', true);
+    let lastBotText = null;
+    let voicesReady = false;
+
+    // Warm up speechSynthesis voices (some browsers populate them asynchronously)
+    function warmVoices() {
+      if (!('speechSynthesis' in window)) return;
+      const vs = window.speechSynthesis.getVoices();
+      if (vs && vs.length) { voicesReady = true; }
+      window.speechSynthesis.onvoiceschanged = () => { voicesReady = true; };
+    }
+    warmVoices();
+
+    // Initialize browser speech recognition (if available).
+    function initRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return null;
+      const r = new SpeechRecognition();
+      r.lang = 'en-US';
+      r.interimResults = false;
+      r.maxAlternatives = 1;
+      r.onresult = (e) => {
+        const t = e.results[0][0].transcript;
+        elInput.value = t;
+        send(t);
+      };
+      r.onerror = (e) => {
+        console.warn('Speech recognition error', e);
+        recognizing = false;
+        if (btnMic) { btnMic.classList.remove('active'); btnMic.textContent = '🎙️ Voice'; }
+      };
+      r.onend = () => {
+        recognizing = false;
+        if (btnMic) { btnMic.classList.remove('active'); btnMic.textContent = '🎙️ Voice'; }
+      };
+      return r;
+    }
+
+    // Fallback: record audio via AudioContext and encode 16kHz WAV for server-side STT
+    let mediaStream = null;
+    let audioCtx = null;
+    let pcmData = [];
+    let recorderNode = null;
+
+    function floatTo16BitPCM(float32Array) {
+      const l = float32Array.length;
+      const buffer = new ArrayBuffer(l * 2);
+      const view = new DataView(buffer);
+      let offset = 0;
+      for (let i = 0; i < l; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, float32Array[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+      return new Int16Array(buffer);
+    }
+
+    function encodeWAV(samples, sampleRate) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+
+      function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      }
+
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+
+      // PCM samples
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++, offset += 2) {
+        view.setInt16(offset, samples[i], true);
+      }
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    async function startRecordingForSTT() {
+      pcmData = [];
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        alert('Microphone access denied');
+        return false;
+      }
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(mediaStream);
+      const desiredSampleRate = 16000;
+      const bufferSize = 4096;
+      recorderNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+      recorderNode.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        // resample to 16k if needed
+        let sampleRate = audioCtx.sampleRate;
+        if (sampleRate === desiredSampleRate) {
+          pcmData.push(floatTo16BitPCM(input));
+        } else {
+          // simple linear resample
+          const ratio = sampleRate / desiredSampleRate;
+          const newLength = Math.round(input.length / ratio);
+          const resampled = new Float32Array(newLength);
+          for (let i = 0; i < newLength; i++) {
+            const idx = Math.floor(i * ratio);
+            resampled[i] = input[idx] || 0;
+          }
+          pcmData.push(floatTo16BitPCM(resampled));
+        }
+      };
+      source.connect(recorderNode);
+      recorderNode.connect(audioCtx.destination);
+      return true;
+    }
+
+    async function stopRecordingAndSendSTT() {
+      try {
+        if (recorderNode) {
+          recorderNode.disconnect(); recorderNode.onaudioprocess = null; recorderNode = null;
+        }
+        if (audioCtx) {
+          await audioCtx.close(); audioCtx = null;
+        }
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null;
+        }
+        // flatten pcmData
+        let totalLen = 0;
+        for (const arr of pcmData) totalLen += arr.length;
+        const merged = new Int16Array(totalLen);
+        let offset = 0;
+        for (const arr of pcmData) { merged.set(arr, offset); offset += arr.length; }
+        const wav = encodeWAV(merged, 16000);
+        // send to server
+        const res = await fetch('/api/stt', { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: await wav.arrayBuffer() });
+        if (!res.ok) {
+          const j = await res.json().catch(() => null);
+          console.warn('STT failed', j);
+          alert('Server STT failed: ' + (j?.error || res.status));
+          return null;
+        }
+        const j = await res.json();
+        return j.text || '';
+      } catch (e) {
+        console.error('stopRecordingAndSendSTT failed', e);
+        alert('Recording failed: ' + e.message);
+        return null;
+      } finally {
+        pcmData = [];
+      }
+    }
+
+    function speak(text) {
+      if (!ttsEnabled) return;
+      if (!('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 1;
+        u.pitch = 1;
+        const voices = window.speechSynthesis.getVoices();
+        for (const v of voices) { if (v.lang && v.lang.toLowerCase().startsWith('en')) { u.voice = v; break; } }
+        window.speechSynthesis.speak(u);
+      } catch (e) { console.warn('TTS failed', e); }
+    }
+
+    // Hook into replaceTyping to auto speak and save last bot text
+    const _origReplaceTyping = replaceTyping;
+    function replaceTyping(handle, text) {
+      try {
+        _origReplaceTyping(handle, text);
+      } catch (e) {
+        console.error('Underlying replaceTyping failed', e);
+        // Try to patch the bubble directly
+        try { handle.bubble.textContent = text; } catch (e2) { console.error('Fallback replace failed', e2); }
+      }
+      // Save last bot text for server TTS
+      try { lastBotText = text; if (btnPlayServer) btnPlayServer.style.display = lastBotText ? 'inline-flex' : 'none'; } catch (_) {}
+      // Speak bot responses if enabled
+      try { speak(text); } catch (e) { console.warn('TTS speak failed', e); }
+    }
+
+    if (btnMic) {
+      btnMic.addEventListener('click', async () => {
+        // Prefer in-browser Web Speech API if available for lower-latency live STT
+        if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+          if (!recognition) recognition = initRecognition();
+          if (!recognition) { alert('Speech recognition not supported in this browser.'); return; }
+          if (recognizing) {
+            recognition.stop();
+          } else {
+            try {
+              recognition.start();
+              recognizing = true;
+              btnMic.classList.add('active');
+              btnMic.textContent = '⏺️ Listening';
+            } catch (e) { console.warn(e); }
+          }
+          return;
+        }
+
+        // Fallback: use server-side STT by recording WAV and sending it
+        if (btnMic.classList.contains('recording')) {
+          // stop
+          btnMic.classList.remove('recording');
+          btnMic.textContent = '🎙️ Voice';
+          const text = await stopRecordingAndSendSTT();
+          if (text) { elInput.value = text; send(text); }
+        } else {
+          const ok = await startRecordingForSTT();
+          if (ok) {
+            btnMic.classList.add('recording');
+            btnMic.textContent = '⏹️ Stop';
+          }
+        }
+      });
+    }
+
+    if (btnTTS) {
+      btnTTS.textContent = ttsEnabled ? '🔊 TTS: ON' : '🔈 TTS: OFF';
+      btnTTS.addEventListener('click', () => {
+        ttsEnabled = !ttsEnabled;
+        save('tts_enabled', ttsEnabled);
+        btnTTS.textContent = ttsEnabled ? '🔊 TTS: ON' : '🔈 TTS: OFF';
+      });
+    }
+
+    // Play last bot text via server TTS (useful if browser TTS is unavailable)
+    if (btnPlayServer) {
+      btnPlayServer.addEventListener('click', async () => {
+        if (!lastBotText) return alert('No bot response to play');
+        try {
+          const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: lastBotText }) });
+          if (!res.ok) {
+            const j = await res.json().catch(() => null);
+            console.warn('Server TTS failed', j);
+            return alert('Server TTS not available');
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = new Audio(url);
+          a.play();
+          a.onended = () => { URL.revokeObjectURL(url); };
+        } catch (e) {
+          console.error('Server TTS play failed', e);
+          alert('Server TTS failed');
+        }
+      });
+
+      // decide whether to show the server-play button depending on browser support
+      if (!('speechSynthesis' in window)) {
+        btnPlayServer.style.display = 'inline-flex';
+      }
+    }
+
+    // Initial dataset load then greeting
+    (async function init() {
+      setDatasetStatus('Loading dataset...');
+      try {
+        await loadServerDataset();
+      } catch (e) {
+        console.warn('Dataset load failed during init', e);
+      }
+      greet();
+    })();
   </script>
 </body>
 </html>

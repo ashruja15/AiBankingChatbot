@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations Feature - Live Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .instruction {
+            background: #f0f9ff;
+            border-left: 4px solid #22c55e;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        
+        .instruction h3 {
+            color: #22c55e;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .instruction p {
+            color: #333;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .demo-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .demo-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .question-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 200ms;
+        }
+        
+        button:hover {
+            background: #16a34a;
+        }
+        
+        button.secondary {
+            background: #667eea;
+        }
+        
+        button.secondary:hover {
+            background: #5568d3;
+        }
+        
+        .recommendations-demo {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .rec-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #22c55e;
+        }
+        
+        .rec-close {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 0;
+        }
+        
+        .rec-items {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .rec-card {
+            padding: 12px;
+            border: 1px solid rgba(34,197,94,0.3);
+            border-radius: 8px;
+            background: rgba(34,197,94,0.05);
+            cursor: pointer;
+            transition: all 200ms;
+        }
+        
+        .rec-card:hover {
+            background: rgba(34,197,94,0.12);
+            border-color: rgba(34,197,94,0.6);
+            transform: translateY(-2px);
+        }
+        
+        .rec-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #22c55e;
+            margin-bottom: 5px;
+        }
+        
+        .rec-card-desc {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+        
+        .rec-card-action {
+            font-size: 11px;
+            color: #22c55e;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            display: block;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            display: block;
+        }
+        
+        .status.info {
+            background: #dbeafe;
+            color: #0c2340;
+            border: 1px solid #bfdbfe;
+            display: block;
+        }
+        
+        .steps {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .step {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        .step-title {
+            display: inline;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .step-desc {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+            margin-left: 38px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💡 Personalized Recommendations</h1>
+            <p>Live Demo - Test the Full Feature Integration</p>
+        </div>
+        
+        <div class="content">
+            <div class="instruction">
+                <h3>How It Works</h3>
+                <p>This demo shows how the AI Banking Chatbot tracks your questions and generates personalized financial product recommendations. The more you ask about specific topics, the better the recommendations become!</p>
+            </div>
+            
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <span class="step-title">Ask Questions</span>
+                    <div class="step-desc">Enter banking-related questions below to build your interest profile</div>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span class="step-title">Profile Building</span>
+                    <div class="step-desc">The system tracks keywords from your questions across 7 categories: savings, investments, loans, credit, digital, security, and accounts</div>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span class="step-title">Personalized Recommendations</span>
+                    <div class="step-desc">Based on your top interests, you'll see tailored financial products and services</div>
+                </div>
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <span class="step-title">See It Live</span>
+                    <div class="step-desc">Visit the main chatbot and see the panel appear as you ask questions!</div>
+                </div>
+            </div>
+            
+            <div class="demo-section">
+                <h3>🧪 Test Driver - Ask Questions</h3>
+                <div class="question-input">
+                    <input type="text" id="userQuestion" placeholder="Ask a banking question (e.g., 'What are investment options?')" value="">
+                    <button onclick="askQuestion()">Ask</button>
+                    <button class="secondary" onclick="resetProfile()">Reset</button>
+                </div>
+                <div id="status" class="status"></div>
+                
+                <div class="recommendations-demo" id="recsContainer" style="display: none;">
+                    <div class="rec-header">
+                        <span class="rec-title">💡 Your Personalized Recommendations</span>
+                        <button class="rec-close" onclick="closeRecs()">✕</button>
+                    </div>
+                    <div id="recItems" class="rec-items"></div>
+                </div>
+            </div>
+            
+            <div class="instruction" style="margin-top: 30px;">
+                <h3>👉 Next Step: Visit the Main Chatbot</h3>
+                <p>Open the <strong><a href="http://127.0.0.1:5000" style="color: #22c55e; text-decoration: none;">AI Banking Chatbot</a></strong> at http://127.0.0.1:5000 and ask questions. The "💡 Personalized for You" panel will automatically appear below your chat messages!</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://127.0.0.1:5000';
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            setTimeout(() => {
+                if (type === 'info') status.style.display = 'none';
+            }, 5000);
+        }
+        
+        async function askQuestion() {
+            const input = document.getElementById('userQuestion');
+            const question = input.value.trim();
+            
+            if (!question) {
+                showStatus('Please enter a question', 'error');
+                return;
+            }
+            
+            showStatus('Asking question...', 'info');
+            
+            try {
+                // Send question to chat API
+                const chatRes = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: question })
+                });
+                
+                if (!chatRes.ok) throw new Error(`Chat API: ${chatRes.status}`);
+                const chatData = await chatRes.json();
+                
+                // Get recommendations
+                const recsRes = await fetch(`${API_URL}/api/recommendations`, {
+                    cache: 'no-store'
+                });
+                
+                if (!recsRes.ok) throw new Error(`Recommendations API: ${recsRes.status}`);
+                const recsData = await recsRes.json();
+                
+                // Display recommendations
+                const recs = recsData.recommendations || [];
+                if (recs.length > 0) {
+                    displayRecommendations(recs);
+                    showStatus(`✅ Question asked! ${recs.length} recommendations generated`, 'success');
+                } else {
+                    showStatus('Question tracked, but no recommendations yet. Ask more questions!', 'info');
+                }
+                
+                // Clear input and show next suggestion
+                input.value = '';
+                input.placeholder = 'Ask another question...';
+                
+            } catch (error) {
+                console.error(error);
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function displayRecommendations(recommendations) {
+            const container = document.getElementById('recsContainer');
+            const recItems = document.getElementById('recItems');
+            
+            recItems.innerHTML = '';
+            
+            recommendations.forEach(rec => {
+                const card = document.createElement('div');
+                card.className = 'rec-card';
+                card.innerHTML = `
+                    <div class="rec-card-title">${rec.title}</div>
+                    <div class="rec-card-desc">${rec.description}</div>
+                    <div class="rec-card-action">${rec.action || 'Learn More'}</div>
+                `;
+                recItems.appendChild(card);
+            });
+            
+            container.style.display = 'block';
+        }
+        
+        function closeRecs() {
+            document.getElementById('recsContainer').style.display = 'none';
+        }
+        
+        async function resetProfile() {
+            showStatus('Resetting profile...', 'info');
+            try {
+                // Note: In a real scenario, we'd have a /api/reset endpoint
+                // For now, just clear the local display
+                document.getElementById('recsContainer').style.display = 'none';
+                document.getElementById('userQuestion').value = '';
+                showStatus('Profile cleared! You can restart the chatbot for a fresh session.', 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('userQuestion').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') askQuestion();
+        });
+        
+        // Test connection on load
+        window.addEventListener('load', async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/greeting`);
+                if (res.ok) {
+                    showStatus('✅ Connected to AI Banking Chatbot', 'success');
+                } else {
+                    showStatus('⚠️ Server connection issue', 'error');
+                }
+            } catch {
+                showStatus('❌ Cannot connect to server. Is it running?', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

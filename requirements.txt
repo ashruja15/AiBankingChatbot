@@ -1,0 +1,7 @@
+SpeechRecognition>=3.8.1
+pyttsx3>=2.90
+PyAudio>=0.2.11  # On Windows use pipwin install pyaudio if pip install fails
+vosk>=0.3.44  # optional for offline STT (models are large — see README)
+Flask>=2.2
+Flask-Cors>=3.0.10
+pipwin>=0.5.1  # optional helper for installing PyAudio on Windows
