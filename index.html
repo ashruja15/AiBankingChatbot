@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" >
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" >
+
+  <title>NexaBank - AI Banking Assistant</title>
+
+  <style>
+
+    :root {
+
+      --bg:#f0f2f5;--surface:#ffffff;--surface-2:#f7f8fa;--border:#e3e6ea;
+
+      --text:#1a2332;--muted:#6b7a8d;--primary:#1a56db;--primary-dk:#1345b5;
+
+      --primary-lt:#ebf0ff;--accent:#0f9b6e;--accent-lt:#e6f7f2;
+
+      --danger:#c0392b;--warn:#d97706;--bubble-u:#1a56db;
+
+      --sh-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+
+      --sh-md:0 4px 12px rgba(0,0,0,.1);
+
+      --r-sm:6px;--r-md:10px;--tr:150ms ease;
+
+    }
+
+    [data-theme="dark"] {
+
+      --bg:#0d1117;--surface:#161b22;--surface-2:#1c2430;--border:#2d3748;
+
+      --text:#e2e8f0;--muted:#8b99af;--primary:#4f8ef7;--primary-dk:#3d7ce5;
+
+      --primary-lt:#172040;--accent:#2dd4a7;--accent-lt:#0d2e23;
+
+      --bubble-u:#2563eb;
+
+      --sh-sm:0 1px 3px rgba(0,0,0,.3);--sh-md:0 4px 12px rgba(0,0,0,.4);
+
+    }
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+    body{font-family:-apple-system,"Segoe UI",system-ui,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.6}
+
+
+
+    /* TOP BAR */
+
+    .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100;box-shadow:var(--sh-sm)}
+
+    .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;flex-shrink:0}
+
+    .brand-icon{width:32px;height:32px;border-radius:var(--r-sm);background:var(--primary);display:flex;align-items:center;justify-content:center}
+
+    .brand-icon svg{width:18px;height:18px;fill:#fff}
+
+    .brand-name{font-size:16px;font-weight:700;letter-spacing:-.3px}
+
+    .brand-sub{font-size:11px;color:var(--muted);margin-top:-2px}
+
+    .topbar-nav{display:flex;gap:2px;margin-left:20px}
+
+    .nav-item{padding:6px 12px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:var(--tr)}
+
+    .nav-item:hover{background:var(--surface-2);color:var(--text)}
+
+    .nav-item.active{background:var(--primary-lt);color:var(--primary)}
+
+    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+
+    .status-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--accent-lt);border:1px solid rgba(15,155,110,.2);font-size:11px;font-weight:600;color:var(--accent)}
+
+    .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+
+
+    /* ICON BUTTONS */
+
+    .ibtn{width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--tr);flex-shrink:0}
+
+    .ibtn:hover{background:var(--surface-2);color:var(--text)}
+
+    .ibtn.on{background:var(--primary-lt);color:var(--primary);border-color:var(--primary)}
+
+    .ibtn svg{width:16px;height:16px;pointer-events:none}
+
+
+
+    /* LAYOUT */
+
+    .layout{display:grid;grid-template-columns:260px 1fr 256px;flex:1;height:calc(100vh - 56px);overflow:hidden}
+
+
+
+    /* LEFT SIDEBAR */
+
+    .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+
+    .sb-sec{padding:14px;border-bottom:1px solid var(--border)}
+
+    .sb-sec:last-child{border-bottom:none}
+
+    .sb-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+
+    .qchip{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;font-size:12.5px;font-weight:500;text-align:left;transition:var(--tr);margin-bottom:4px}
+
+    .qchip:hover{background:var(--primary-lt);border-color:var(--primary);color:var(--primary)}
+
+    .qchip:last-child{margin-bottom:0}
+
+    .qico{width:22px;height:22px;border-radius:4px;background:var(--primary-lt);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--primary)}
+
+    .qico svg{width:12px;height:12px}
+
+    .stat-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;margin-bottom:8px}
+
+    .stat-card:last-child{margin-bottom:0}
+
+    .s-lbl{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:2px}
+
+    .s-val{font-size:20px;font-weight:700;letter-spacing:-.5px}
+
+    .s-hint{font-size:11px;color:var(--accent);margin-top:1px;font-weight:500}
+
+
+
+    /* CHAT PANEL */
+
+    .chat-panel{display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+
+    .chat-hdr{padding:12px 18px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+
+    .chat-av{width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+    .chat-av svg{width:18px;height:18px;fill:#fff}
+
+    .chat-name{font-size:14px;font-weight:600}
+
+    .chat-sub{font-size:12px;color:var(--muted);margin-top:1px}
+
+    .chat-tools{margin-left:auto;display:flex;gap:6px}
+
+    .messages{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+
+    .mrow{display:flex;gap:9px;align-items:flex-start;animation:mIn 180ms ease-out}
+
+    .mrow.user{flex-direction:row-reverse}
+
+    @keyframes mIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+    .mav{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-top:2px}
+
+    .mrow.bot .mav{background:var(--primary)}
+
+    .mrow.user .mav{background:#475569}
+
+    .mbody{max-width:74%;display:flex;flex-direction:column;gap:4px}
+
+    .mrow.user .mbody{align-items:flex-end}
+
+    .bubble{padding:9px 13px;border-radius:var(--r-md);font-size:14px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
+
+    .mrow.bot .bubble{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:3px;box-shadow:var(--sh-sm)}
+
+    .mrow.user .bubble{background:var(--bubble-u);color:#fff;border-bottom-right-radius:3px}
+
+    .mmeta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);padding:0 2px}
+
+    .conf-track{width:72px;height:4px;background:var(--border);border-radius:4px;overflow:hidden}
+
+    .conf-fill{height:100%;border-radius:4px;transition:width 350ms ease}
+
+    .fbwrap{display:flex;gap:3px}
+
+    .fbtn{width:22px;height:20px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:var(--tr)}
+
+    .fbtn:hover{background:var(--surface-2)}
+
+    .fbtn.up.on{background:var(--accent-lt);border-color:var(--accent);color:var(--accent)}
+
+    .fbtn.dn.on{background:#fef2f2;border-color:var(--danger);color:var(--danger)}
+
+    .dots{display:flex;gap:4px;align-items:center;padding:3px 0}
+
+    .dots span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+
+    .dots span:nth-child(2){animation-delay:.2s}
+
+    .dots span:nth-child(3){animation-delay:.4s}
+
+    @keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+
+
+
+    /* INPUT AREA */
+
+    .input-area{padding:10px 18px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+
+    .input-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end}
+
+    .txtwrap{position:relative}
+
+    .txtbox{width:100%;resize:none;min-height:44px;max-height:120px;padding:10px 13px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color var(--tr),box-shadow var(--tr);line-height:1.5}
+
+    .txtbox:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
+
+    .txtbox::placeholder{color:var(--muted)}
+
+    .acdrop{position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--sh-md);display:none;max-height:200px;overflow-y:auto;z-index:50}
+
+    .acitem{padding:8px 13px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);transition:background var(--tr)}
+
+    .acitem:last-child{border-bottom:none}
+
+    .acitem:hover{background:var(--primary-lt);color:var(--primary)}
+
+    .send-btn{height:44px;padding:0 16px;border-radius:var(--r-md);border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background var(--tr),transform var(--tr);white-space:nowrap}
+
+    .send-btn:hover{background:var(--primary-dk)}
+
+    .send-btn:active{transform:scale(.97)}
+
+    .send-btn svg{width:14px;height:14px}
+
+    .input-hint{font-size:11px;color:var(--muted);margin-top:5px}
+
+    kbd{display:inline-block;padding:1px 5px;font-size:10px;font-family:inherit;border:1px solid var(--border);border-radius:3px;background:var(--surface-2);color:var(--muted)}
+
+
+
+    /* RIGHT PANEL */
+
+    .rpanel{background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+
+    .rp-sec{padding:14px;border-bottom:1px solid var(--border)}
+
+    .rp-sec:last-child{border-bottom:none}
+
+    .rp-ttl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+
+    .rcard{padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);margin-bottom:8px;cursor:pointer;transition:var(--tr)}
+
+    .rcard:last-child{margin-bottom:0}
+
+    .rcard:hover{border-color:var(--primary);background:var(--primary-lt)}
+
+    .rcard-title{font-size:12.5px;font-weight:600;margin-bottom:3px}
+
+    .rcard-desc{font-size:11.5px;color:var(--muted);line-height:1.4}
+
+    .rcard-cta{display:inline-block;margin-top:5px;font-size:11px;font-weight:600;color:var(--primary);border:1px solid var(--primary);padding:2px 8px;border-radius:4px;background:var(--primary-lt)}
+
+    .hist-item{padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer}
+
+    .hist-item:last-child{border-bottom:none}
+
+    .hist-item:hover .hist-q{color:var(--primary)}
+
+    .hist-q{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .hist-ts{font-size:11px;color:var(--muted);margin-top:1px}
+
+
+
+    /* ADD Q&A MODAL */
+
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:200}
+
+    .modal-bg.open{display:flex}
+
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:22px 24px;width:min(480px,94vw);box-shadow:var(--sh-md)}
+
+    .modal-title{font-size:15px;font-weight:700;margin-bottom:4px}
+
+    .modal-sub{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+
+    .field{margin-bottom:12px}
+
+    .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+
+    .field input,.field textarea{width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13.5px;font-family:inherit;outline:none;transition:border-color var(--tr)}
+
+    .field input:focus,.field textarea:focus{border-color:var(--primary)}
+
+    .field textarea{resize:vertical;min-height:72px}
+
+    .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
+    .btn-ghost{padding:8px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;transition:var(--tr)}
+
+    .btn-ghost:hover{background:var(--surface-2)}
+
+    .btn-primary{padding:8px 16px;border-radius:var(--r-sm);border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background var(--tr)}
+
+    .btn-primary:hover{background:var(--primary-dk)}
+
+
+
+    /* TOAST */
+
+    .toast{position:fixed;bottom:24px;right:24px;padding:10px 16px;border-radius:var(--r-sm);background:var(--text);color:var(--surface);font-size:13px;font-weight:500;box-shadow:var(--sh-md);z-index:300;opacity:0;transform:translateY(8px);transition:opacity 250ms,transform 250ms;pointer-events:none}
+
+    .toast.show{opacity:1;transform:translateY(0)}
+
+
+
+    ::-webkit-scrollbar{width:5px;height:5px}
+
+    ::-webkit-scrollbar-track{background:transparent}
+
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+    ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar,.rpanel{display:none}}
+
+    @media(max-width:640px){.topbar-nav{display:none}.input-row{grid-template-columns:1fr auto}}
+
+
+
+    /* ---- PAGE SECTIONS (Accounts / Transfers / Products / Support) ---- */
+
+    .page{display:none;overflow-y:auto;padding:28px 32px;background:var(--bg);animation:mIn 180ms ease-out;height:calc(100vh - 56px)}
+
+    .page.active{display:block}
+
+    .page-title{font-size:20px;font-weight:700;margin-bottom:4px;letter-spacing:-.3px}
+
+    .page-sub{font-size:13px;color:var(--muted);margin-bottom:22px}
+
+    .page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:22px}
+
+    .pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;transition:var(--tr)}
+
+    .pcard:hover{box-shadow:var(--sh-md);border-color:var(--primary)}
+
+    .pcard-icon{width:34px;height:34px;border-radius:var(--r-sm);background:var(--primary-lt);display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:var(--primary)}
+
+    .pcard-icon svg{width:17px;height:17px}
+
+    .pcard-title{font-size:13px;font-weight:600;margin-bottom:4px}
+
+    .pcard-desc{font-size:12px;color:var(--muted);line-height:1.5}
+
+    .pcard-badge{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-lt);color:var(--accent)}
+
+    .pcard-badge.warn{background:#fff7ed;color:var(--warn)}
+
+    .pcard-badge.primary{background:var(--primary-lt);color:var(--primary)}
+
+    .sec-hdr{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px}
+
+    .info-tbl{width:100%;border-collapse:collapse;background:var(--surface);border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border);margin-bottom:20px;font-size:13px}
+
+    .info-tbl th{text-align:left;padding:9px 13px;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);background:var(--surface-2);border-bottom:1px solid var(--border)}
+
+    .info-tbl td{padding:9px 13px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--muted)}
+
+    .info-tbl tr:last-child td{border-bottom:none}
+
+    .info-tbl td:first-child{font-weight:500;color:var(--text);width:38%}
+
+    .alert-box{padding:11px 14px;border-radius:var(--r-sm);border-left:3px solid var(--primary);background:var(--primary-lt);font-size:13px;color:var(--text);margin-bottom:18px}
+
+    .alert-box.green{border-color:var(--accent);background:var(--accent-lt)}
+
+  </style>
+
+</head>
+
+<body>
+
+
+
+<nav class="topbar">
+
+  <a class="brand" href="#">
+
+    <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M11.5 2L2 7v1h20V7L11.5 2zM4 10v7H2v2h20v-2h-2v-7h-2v7h-4v-7h-2v7H8v-7H4z"/></svg></div>
+
+    <div><div class="brand-name">NexaBank</div><div class="brand-sub">AI Banking Assistant</div></div>
+
+  </a>
+
+  <nav class="topbar-nav">
+
+    <div class="nav-item active">Assistant</div>
+
+    <div class="nav-item">Accounts</div>
+
+    <div class="nav-item">Transfers</div>
+
+    <div class="nav-item">Products</div>
+
+    <div class="nav-item">Support</div>
+
+  </nav>
+
+  <div class="topbar-right">
+
+    <div class="status-pill"><div class="status-dot"></div><span id="statusLabel">Connecting...</span></div>
+
+    <button class="ibtn" id="btnAddQA" title="Add Q&amp;A to knowledge base">
+
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+
+    </button>
+
+    <button class="ibtn" id="btnClear" title="Clear conversation">
+
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+
+    </button>
+
+    <button class="ibtn" id="btnExport" title="Export chat transcript">
+
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+
+    </button>
+
+    <button class="ibtn" id="btnTheme" title="Toggle dark/light theme">
+
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+
+    </button>
+
+    <button class="ibtn" id="btnPlayServer" title="Play last response via server TTS" style="display:none">
+
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+
+    </button>
+
+  </div>
+
+</nav>
+
+
+
+<div class="layout">
+
+  <!-- LEFT SIDEBAR -->
+
+  <aside class="sidebar">
+
+    <div class="sb-sec">
+
+      <div class="sb-lbl">Quick Questions</div>
+
+      <button class="qchip" data-q="How do I open a savings account?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></span>Open Savings Account</button>
+
+      <button class="qchip" data-q="What are ATM withdrawal limits?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>ATM Limits</button>
+
+      <button class="qchip" data-q="How do I dispute a transaction?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>Dispute Transaction</button>
+
+      <button class="qchip" data-q="How do I reset my online banking password?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>Reset Password</button>
+
+      <button class="qchip" data-q="How do I apply for a personal loan?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span>Personal Loan</button>
+
+      <button class="qchip" data-q="How do I enable two factor authentication?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Enable 2FA</button>
+
+      <button class="qchip" data-q="What is a credit score?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>Credit Score</button>
+
+      <button class="qchip" data-q="How long do wire transfers take?"><span class="qico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>Wire Transfers</button>
+
+    </div>
+
+    <div class="sb-sec">
+
+      <div class="sb-lbl">Session Stats</div>
+
+      <div class="stat-card"><div class="s-lbl">Questions Asked</div><div class="s-val" id="statQ">0</div><div class="s-hint">This session</div></div>
+
+      <div class="stat-card"><div class="s-lbl">Avg. Confidence</div><div class="s-val" id="statConf">--</div><div class="s-hint">Match accuracy</div></div>
+
+      <div class="stat-card"><div class="s-lbl">Knowledge Base</div><div class="s-val" id="statKB">--</div><div class="s-hint">Q&amp;A pairs loaded</div></div>
+
+    </div>
+
+  </aside>
+
+
+
+  <!-- CHAT PANEL -->
+
+  <main class="chat-panel">
+
+    <div class="chat-hdr">
+
+      <div class="chat-av"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
+
+      <div>
+
+        <div class="chat-name">Aria -- Banking AI Assistant</div>
+
+        <div class="chat-sub" id="chatSub">Initialising...</div>
+
+      </div>
+
+      <div class="chat-tools">
+
+        <button class="ibtn" id="btnMic" title="Voice input">
+
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+
+        </button>
+
+        <button class="ibtn" id="btnTTS" title="Toggle text-to-speech">
+
+          <svg id="ttsIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+
+        </button>
+
+        <button class="ibtn" id="btnReload" title="Reload knowledge base">
+
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+
+        </button>
+
+      </div>
+
+    </div>
+
+    <section id="messages" class="messages" aria-live="polite"></section>
+
+    <div class="input-area">
+
+      <div class="input-row">
+
+        <div class="txtwrap">
+
+          <textarea id="txtInput" class="txtbox" rows="1" placeholder="Ask about accounts, loans, transfers, fraud prevention..." aria-label="Type your message"></textarea>
+
+          <div class="acdrop" id="acdrop"></div>
+
+        </div>
+
+        <button class="ibtn" id="btnMic2" title="Voice input" style="height:44px;width:44px">
+
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+
+        </button>
+
+        <button class="send-btn" id="btnSend">
+
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+
+          Send
+
+        </button>
+
+      </div>
+
+      <div class="input-hint">Press <kbd>Enter</kbd> to send &nbsp;|&nbsp; <kbd>Shift+Enter</kbd> new line &nbsp;|&nbsp; <kbd>/</kbd> to focus</div>
+
+    </div>
+
+  </main>
+
+
+
+  <!-- RIGHT PANEL -->
+
+  <aside class="rpanel">
+
+    <div class="rp-sec">
+
+      <div class="rp-ttl">Suggested Products</div>
+
+      <div id="recItems">
+
+        <div class="rcard"><div class="rcard-title">High-Yield Savings</div><div class="rcard-desc">Earn up to 4.5% APY with no lock-in period.</div><span class="rcard-cta">Learn More</span></div>
+
+        <div class="rcard"><div class="rcard-title">Mobile Banking App</div><div class="rcard-desc">Manage accounts and pay bills 24/7 from anywhere.</div><span class="rcard-cta">Download</span></div>
+
+        <div class="rcard"><div class="rcard-title">Rewards Credit Card</div><div class="rcard-desc">Cashback on every purchase. No annual fee first year.</div><span class="rcard-cta">Apply Now</span></div>
+
+      </div>
+
+    </div>
+
+    <div class="rp-sec">
+
+      <div class="rp-ttl">Recent Questions</div>
+
+      <div id="historyList"><div style="font-size:12px;color:var(--muted);padding:4px 0">Your history will appear here.</div></div>
+
+    </div>
+
+    <div class="rp-sec">
+
+      <div class="rp-ttl">Contact Support</div>
+
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.8">
+
+        <strong style="color:var(--text)">24/7 Helpline</strong><br>1-800-NEXA-BANK<br><br>
+
+        <strong style="color:var(--text)">Branches</strong><br>nexabank.com/branches<br><br>
+
+        <strong style="color:var(--text)">Email</strong><br>support@nexabank.com
+
+      </div>
+
+    </div>
+
+  </aside>
+
+</div>
+
+
+
+<!-- ACCOUNTS PAGE -->
+
+<div class="page" id="page-accounts">
+
+  <div class="page-title">Accounts</div>
+
+  <div class="page-sub">Overview of NexaBank account types, features, and requirements.</div>
+
+  <div class="alert-box green"><strong>FDIC Insured</strong> &mdash; All deposits insured up to $250,000 per depositor.</div>
+
+  <div class="sec-hdr">Account Types</div>
+
+  <div class="page-grid">
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div class="pcard-title">Savings Account</div><div class="pcard-desc">Earn interest on your balance. Minimum balance $100.</div><span class="pcard-badge">2.5% APY</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="pcard-title">Current / Checking</div><div class="pcard-desc">Unlimited transactions, no interest. Designed for businesses and daily spending.</div><span class="pcard-badge primary">No Limit</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="pcard-title">High-Yield Savings</div><div class="pcard-desc">Premium tier with boosted interest for balances over $5,000.</div><span class="pcard-badge">Up to 4.5% APY</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg></div><div class="pcard-title">Student Account</div><div class="pcard-desc">No monthly fees, lower minimum balance. Special perks for students.</div><span class="pcard-badge primary">Fee-Free</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="pcard-title">Joint Account</div><div class="pcard-desc">Held by two or more people with equal rights and responsibilities.</div><span class="pcard-badge primary">Shared Access</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div class="pcard-title">Zero-Balance Salary Account</div><div class="pcard-desc">No minimum balance. Fee waived when salary is directly deposited.</div><span class="pcard-badge">$0 Min Balance</span></div>
+
+  </div>
+
+  <div class="sec-hdr">Requirements to Open an Account</div>
+
+  <table class="info-tbl"><thead><tr><th>Requirement</th><th>Details</th></tr></thead><tbody>
+
+    <tr><td>Government-issued ID</td><td>Passport, driver's license, or national ID card</td></tr>
+
+    <tr><td>Proof of Address</td><td>Utility bill or bank statement within 3 months</td></tr>
+
+    <tr><td>Tax Identification</td><td>PAN card / SSN / TIN depending on jurisdiction</td></tr>
+
+    <tr><td>Initial Deposit</td><td>From $0 (salary) to $100 (standard savings)</td></tr>
+
+    <tr><td>KYC Verification</td><td>In-branch or via the mobile app with live photo</td></tr>
+
+  </tbody></table>
+
+  <div class="sec-hdr">Fees Overview</div>
+
+  <table class="info-tbl"><thead><tr><th>Fee Type</th><th>Amount</th></tr></thead><tbody>
+
+    <tr><td>Monthly Maintenance</td><td>$5 &mdash; waived if balance stays above $100</td></tr>
+
+    <tr><td>Overdraft Fee</td><td>$30 per occurrence</td></tr>
+
+    <tr><td>ATM (Non-NexaBank)</td><td>$2.50 per transaction</td></tr>
+
+    <tr><td>Paper Statement</td><td>$3/month &mdash; free with e-statements</td></tr>
+
+    <tr><td>Account Closure (within 90 days)</td><td>$25 early closure fee</td></tr>
+
+  </tbody></table>
+
+</div>
+
+
+
+<!-- TRANSFERS PAGE -->
+
+<div class="page" id="page-transfers">
+
+  <div class="page-title">Transfers</div>
+
+  <div class="page-sub">Domestic and international transfer methods, limits, fees, and processing times.</div>
+
+  <div class="alert-box"><strong>Tip:</strong> Domestic wire transfers submitted before 4:00 PM ET on business days are processed same-day.</div>
+
+  <div class="sec-hdr">Transfer Methods</div>
+
+  <div class="page-grid">
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div><div class="pcard-title">NEFT</div><div class="pcard-desc">Batch-based transfer processed in hourly cycles. Takes 1-2 hours on working days.</div><span class="pcard-badge primary">Batch Processing</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg></div><div class="pcard-title">RTGS</div><div class="pcard-desc">Real-time high-value transfer. Minimum $10,000. Processed immediately.</div><span class="pcard-badge">Real-Time</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="pcard-title">IMPS</div><div class="pcard-desc">Instant 24/7 transfers including weekends and holidays. Limit up to $50,000.</div><span class="pcard-badge">Instant 24/7</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><div class="pcard-title">UPI</div><div class="pcard-desc">Instant peer-to-peer and merchant payments via mobile number or virtual ID.</div><span class="pcard-badge">Instant - Free</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg></div><div class="pcard-title">International Wire</div><div class="pcard-desc">Cross-border SWIFT transfers. Processing time: 1-3 business days.</div><span class="pcard-badge warn">$15-$30 fee</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div><div class="pcard-title">Scheduled Transfer</div><div class="pcard-desc">Set a future date for a transfer or recurring auto-pay via app or online banking.</div><span class="pcard-badge primary">Automated</span></div>
+
+  </div>
+
+  <div class="sec-hdr">Fees and Limits</div>
+
+  <table class="info-tbl"><thead><tr><th>Transfer Type</th><th>Fee</th><th>Daily Limit</th><th>Processing</th></tr></thead><tbody>
+
+    <tr><td>NEFT</td><td>Free</td><td>No limit</td><td>1-2 hours</td></tr>
+
+    <tr><td>RTGS</td><td>$2-$5</td><td>No limit (min $10,000)</td><td>Immediate</td></tr>
+
+    <tr><td>IMPS</td><td>$0.50-$1</td><td>$50,000</td><td>Instant</td></tr>
+
+    <tr><td>UPI</td><td>Free</td><td>$10,000</td><td>Instant</td></tr>
+
+    <tr><td>International Wire</td><td>$15-$30 + 1-2% FX</td><td>Varies by country</td><td>1-3 business days</td></tr>
+
+    <tr><td>Internal Transfer</td><td>Free</td><td>No limit</td><td>Instant</td></tr>
+
+  </tbody></table>
+
+</div>
+
+
+
+<!-- PRODUCTS PAGE -->
+
+<div class="page" id="page-products">
+
+  <div class="page-title">Products</div>
+
+  <div class="page-sub">Loans, cards, deposits, and investment products offered by NexaBank.</div>
+
+  <div class="sec-hdr">Loans</div>
+
+  <div class="page-grid">
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="pcard-title">Home Loan</div><div class="pcard-desc">Finance property purchase or construction. Secured against property. Tenure up to 30 years.</div><span class="pcard-badge">From 7.5% p.a.</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div class="pcard-title">Personal Loan</div><div class="pcard-desc">Unsecured credit for personal needs. Quick disbursal, no collateral required.</div><span class="pcard-badge warn">From 10.5% p.a.</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg></div><div class="pcard-title">Education Loan</div><div class="pcard-desc">Finance higher education. Repayment starts after course completion. Government-subsidised.</div><span class="pcard-badge">Subsidised</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="pcard-title">Vehicle Loan</div><div class="pcard-desc">Finance new or used cars and two-wheelers. Up to 90% of vehicle value financed.</div><span class="pcard-badge primary">Up to 90% LTV</span></div>
+
+  </div>
+
+  <div class="sec-hdr">Cards</div>
+
+  <div class="page-grid">
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="pcard-title">Classic Debit Card</div><div class="pcard-desc">Linked to your account. Daily ATM limit $500. Contactless payments supported.</div><span class="pcard-badge primary">Free</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="pcard-title">Rewards Credit Card</div><div class="pcard-desc">1.5% cashback on all purchases. No annual fee for the first year. Travel perks included.</div><span class="pcard-badge">1.5% Cashback</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="pcard-title">Premium Credit Card</div><div class="pcard-desc">Lounge access, concierge service, 3% travel cashback. Annual fee $150.</div><span class="pcard-badge primary">Premium</span></div>
+
+  </div>
+
+  <div class="sec-hdr">Deposits and Investments</div>
+
+  <table class="info-tbl"><thead><tr><th>Product</th><th>Min. Amount</th><th>Tenure</th><th>Rate</th></tr></thead><tbody>
+
+    <tr><td>Fixed Deposit (FD)</td><td>$500</td><td>7 days - 10 years</td><td>5.0% - 7.25% p.a.</td></tr>
+
+    <tr><td>Recurring Deposit (RD)</td><td>$50/month</td><td>6 months - 10 years</td><td>5.5% - 7.0% p.a.</td></tr>
+
+    <tr><td>Mutual Funds</td><td>$100 (SIP)</td><td>Open-ended</td><td>Market-linked</td></tr>
+
+    <tr><td>Government Bonds</td><td>$1,000</td><td>1 - 30 years</td><td>4.5% - 6.5% p.a.</td></tr>
+
+  </tbody></table>
+
+</div>
+
+
+
+<!-- SUPPORT PAGE -->
+
+<div class="page" id="page-support">
+
+  <div class="page-title">Support</div>
+
+  <div class="page-sub">Contact channels, complaint escalation, and self-service options.</div>
+
+  <div class="alert-box green"><strong>AI Assistant available 24/7</strong> - Click <strong>Assistant</strong> tab to chat with Aria for instant answers.</div>
+
+  <div class="sec-hdr">Contact Channels</div>
+
+  <div class="page-grid">
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 2 2 0 012 .96h3a2 2 0 012 1.72 12 12 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.87a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45 12 12 0 002.81.7A2 2 0 0122 16.92z"/></svg></div><div class="pcard-title">24/7 Phone Support</div><div class="pcard-desc">Speak to a banking specialist any time, any day.</div><span class="pcard-badge">1-800-NEXA-BANK</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div class="pcard-title">Email Support</div><div class="pcard-desc">For non-urgent queries. Response within 1 business day.</div><span class="pcard-badge primary">support@nexabank.com</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div class="pcard-title">Branch Network</div><div class="pcard-desc">Over 2,400 branches nationwide. Mon-Fri 9:00-17:00, Sat 10:00-14:00.</div><span class="pcard-badge primary">nexabank.com/branches</span></div>
+
+    <div class="pcard"><div class="pcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><div class="pcard-title">Mobile App</div><div class="pcard-desc">In-app chat support, callback requests, and secure document upload.</div><span class="pcard-badge">iOS and Android</span></div>
+
+  </div>
+
+  <div class="sec-hdr">Self-Service Options</div>
+
+  <table class="info-tbl"><thead><tr><th>Action</th><th>How to Do It</th></tr></thead><tbody>
+
+    <tr><td>Block / Unblock Card</td><td>App - Cards - Manage Card, or call 1-800-NEXA-BANK</td></tr>
+
+    <tr><td>Reset Online Banking Password</td><td>nexabank.com - Forgot Password - Email verification link</td></tr>
+
+    <tr><td>Download Statement</td><td>Online banking - Accounts - Statements - Select period</td></tr>
+
+    <tr><td>Update Contact Details</td><td>App - Profile - Edit, or visit any branch with valid ID</td></tr>
+
+    <tr><td>Dispute a Transaction</td><td>App - Transactions - Select charge - Report Issue</td></tr>
+
+    <tr><td>Enable 2FA</td><td>Online banking - Settings - Security - Two-Factor Authentication</td></tr>
+
+  </tbody></table>
+
+  <div class="sec-hdr">Complaint Escalation</div>
+
+  <table class="info-tbl"><thead><tr><th>Level</th><th>Contact</th><th>Resolution</th></tr></thead><tbody>
+
+    <tr><td>Level 1 - Customer Care</td><td>1-800-NEXA-BANK or in-app chat</td><td>Same day</td></tr>
+
+    <tr><td>Level 2 - Branch Manager</td><td>Visit any branch with your complaint reference</td><td>3 business days</td></tr>
+
+    <tr><td>Level 3 - Nodal Officer</td><td>nodal@nexabank.com</td><td>7 business days</td></tr>
+
+    <tr><td>Level 4 - Banking Ombudsman</td><td>Escalate to RBI ombudsman if unresolved within 30 days</td><td>60 days</td></tr>
+
+  </tbody></table>
+
+</div>
+
+
+
+<!-- ADD Q&A MODAL -->
+
+<div class="modal-bg" id="modalBg">
+
+  <div class="modal" role="dialog" aria-modal="true">
+
+    <div class="modal-title">Add Q&amp;A to Knowledge Base</div>
+
+    <div class="modal-sub">New pairs are sent to the server and become available immediately in the chat.</div>
+
+    <div class="field"><label for="qaQ">Question</label><input type="text" id="qaQ" placeholder="e.g. How do I freeze my account?" autocomplete="off"/></div>
+
+    <div class="field"><label for="qaA">Answer</label><textarea id="qaA" placeholder="Enter the answer the assistant should give..."></textarea></div>
+
+    <div class="modal-actions">
+
+      <button class="btn-ghost" id="btnCancel">Cancel</button>
+
+      <button class="btn-primary" id="btnSaveQA">Add to Knowledge Base</button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<div class="toast" id="toast"></div>
+
+
+
+<script>
+
+"use strict";
+
+var API={CHAT:"/api/chat",GREET:"/api/greeting",DATASET:"/api/dataset",RECS:"/api/recommendations",TTS:"/api/tts",STT:"/api/stt"};
+
+var CONF_HIGH=0.75,CONF_MED=0.40,API_TIMEOUT=7000;
+
+
+
+var SEED=[
+
+  {question:"hello",answer:"Hello! Welcome to NexaBank. How can I assist you today?"},
+
+  {question:"hi",answer:"Hi! I am Aria, your NexaBank AI assistant. Ask me about accounts, cards, loans, or transfers."},
+
+  {question:"bye",answer:"Goodbye! Thank you for banking with NexaBank."},
+
+  {question:"good morning",answer:"Good morning! How can I help with your banking today?"},
+
+  {question:"good afternoon",answer:"Good afternoon! What can I help you with?"},
+
+  {question:"good evening",answer:"Good evening! How can I assist you?"},
+
+  {question:"how to open a savings account?",answer:"Visit any NexaBank branch with a government-issued ID and proof of address, or apply online at nexabank.com/open-account."},
+
+  {question:"what are atm withdrawal limits?",answer:"Standard daily ATM limits: $500 (basic) or $1,000 (premium). Adjust limits in the mobile app under Card Settings."},
+
+  {question:"how to reset my online banking password?",answer:"Click Forgot Password on the sign-in page, enter your registered email, and follow the verification link."},
+
+  {question:"how to dispute a transaction?",answer:"Report within 60 days via the app (Transactions > Report Issue) or call 1-800-NEXA-BANK. Provisional credit issued within 3 business days."},
+
+  {question:"how to apply for a personal loan?",answer:"Apply at nexabank.com/loans, via the app, or at any branch. Requires ID, proof of income, and a credit check."},
+
+  {question:"how do i enable two factor authentication?",answer:"Go to Settings > Security > Two-Factor Authentication. Both SMS and authenticator app options are supported."},
+
+  {question:"what is a credit score?",answer:"A 300-850 rating measuring creditworthiness. Scores above 700 qualify for the best rates. Check yours free in the NexaBank app."},
+
+  {question:"how long do wire transfers take?",answer:"Domestic wires before 4:00 PM ET complete same-day. International wires take 1-3 business days."},
+
+  {question:"is my money insured?",answer:"Yes. NexaBank deposits are FDIC-insured up to $250,000 per depositor."},
+
+  {question:"what is overdraft fee?",answer:"A $30 fee when your balance goes below zero. Enrol in overdraft protection to link a backup account."},
+
+  {question:"how to check my account balance?",answer:"Via the NexaBank app, online banking portal, any NexaBank ATM, or by calling 1-800-NEXA-BANK."},
+
+  {question:"what interest rate do you offer on savings?",answer:"Standard accounts: 2.5% APY. High-Yield accounts: up to 4.5% APY. Visit nexabank.com/rates."},
+
+  {question:"what documents are needed to open an account?",answer:"Government-issued ID, proof of address, and a tax identification number."},
+
+  {question:"what is kyc?",answer:"Know Your Customer - a regulatory identity-verification process using government ID, proof of address, and income verification."},
+
+  {question:"what is a fixed deposit?",answer:"A fixed deposit locks your money for a set period at a guaranteed interest rate, earning more than a standard savings account."},
+
+  {question:"how to block my lost debit card?",answer:"Call 1-800-NEXA-BANK immediately or open the app and go to Cards > Manage Card > Block Card. A replacement arrives in 3-5 business days."},
+
+  {question:"what are international transfer fees?",answer:"International wire transfers cost $15-$30 plus a 1-2% FX markup. Fees vary by destination and amount."},
+
+  {question:"how to get a bank statement?",answer:"Download PDF statements from online banking under Accounts > Statements, or enable e-statements to receive them by email monthly."},
+
+  {question:"do you have mobile check deposit?",answer:"Yes. Open the app, go to Deposit > Mobile Check Deposit, and photograph the front and back of your check. Funds available within 1-2 business days."}
+
+];
+
+
+
+var DATASET=SEED.slice(),chatLog=[],stats={questions:0,totalConf:0,confCount:0};
+
+var ttsOn=pref("tts",true),theme=pref("theme","dark");
+
+if(theme==="dark")document.documentElement.setAttribute("data-theme","dark");
+
+
+
+function pref(k,d){try{var v=localStorage.getItem("nb_"+k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
+
+function setPref(k,v){try{localStorage.setItem("nb_"+k,JSON.stringify(v));}catch(e){}}
+
+
+
+function norm(s){return s.toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
+
+function tok(s){return norm(s).split(" ").filter(function(x){return x.length>0;});}
+
+function jaccard(a,b){
+
+  var A=new Set(tok(a)),B=new Set(tok(b));
+
+  if(!A.size&&!B.size)return 1;
+
+  var i=0;A.forEach(function(x){if(B.has(x))i++;});
+
+  return i/new Set([...A,...B]).size;
+
+}
+
+function bestLocal(q){
+
+  var nq=norm(q);
+
+  for(var i=0;i<DATASET.length;i++){var rq=norm(DATASET[i].question);if(rq===nq||rq.indexOf(nq)!==-1||nq.indexOf(rq)!==-1)return{answer:DATASET[i].answer,score:0.95,q:DATASET[i].question};}
+
+  var best=null,bs=-1;
+
+  for(var i=0;i<DATASET.length;i++){var s=jaccard(q,DATASET[i].question);if(s>bs){bs=s;best=DATASET[i];}}
+
+  return{answer:best?best.answer:null,score:bs,q:best?best.question:null};
+
+}
+
+
+
+function ft(url,opts,ms){
+
+  ms=ms||5000;opts=opts||{};
+
+  var ctrl=new AbortController(),id=setTimeout(function(){ctrl.abort();},ms);
+
+  return fetch(url,Object.assign({},opts,{signal:ctrl.signal})).finally(function(){clearTimeout(id);});
+
+}
+
+
+
+async function loadDataset(){
+
+  try{var r=await ft(API.DATASET,{cache:"no-store"});if(r.ok){var d=await r.json();if(Array.isArray(d)&&d.length){DATASET=d;setKBStat(d.length,"server");return true;}}}catch(e){}
+
+  try{var r=await ft("./dataset.json",{cache:"no-store"});if(r.ok){var d=await r.json();if(Array.isArray(d)&&d.length){DATASET=d;setKBStat(d.length,"local file");return true;}}}catch(e){}
+
+  DATASET=SEED.slice();setKBStat(DATASET.length,"embedded");return false;
+
+}
+
+function setKBStat(n,src){document.getElementById("statKB").textContent=n;document.getElementById("chatSub").textContent=n+" Q&A pairs ("+src+")";}
+
+
+
+function trackStats(c){stats.questions++;if(c>0){stats.totalConf+=c;stats.confCount++;}document.getElementById("statQ").textContent=stats.questions;document.getElementById("statConf").textContent=stats.confCount>0?Math.round(stats.totalConf/stats.confCount*100)+"%":"--";}
+
+
+
+function toast(msg,ms){ms=ms||3000;var el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(function(){el.classList.remove("show");},ms);}
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+
+
+var elMsgs=document.getElementById("messages");
+
+function addMsg(role,text){
+
+  var row=document.createElement("div");row.className="mrow "+role;
+
+  var av=document.createElement("div");av.className="mav";av.textContent=role==="user"?"U":"A";
+
+  var body=document.createElement("div");body.className="mbody";
+
+  var bub=document.createElement("div");bub.className="bubble";bub.textContent=text;
+
+  body.appendChild(bub);row.appendChild(av);row.appendChild(body);
+
+  elMsgs.appendChild(row);elMsgs.scrollTop=elMsgs.scrollHeight;
+
+  chatLog.push({role:role,text:text,ts:Date.now()});
+
+  return{row:row,bub:bub,body:body};
+
+}
+
+function addTyping(){
+
+  var row=document.createElement("div");row.className="mrow bot";
+
+  var av=document.createElement("div");av.className="mav";av.textContent="A";
+
+  var body=document.createElement("div");body.className="mbody";
+
+  var bub=document.createElement("div");bub.className="bubble";
+
+  bub.innerHTML="<div class=\"dots\"><span></span><span></span><span></span></div>";
+
+  body.appendChild(bub);row.appendChild(av);row.appendChild(body);
+
+  elMsgs.appendChild(row);elMsgs.scrollTop=elMsgs.scrollHeight;
+
+  return{row:row,bub:bub,body:body};
+
+}
+
+var lastBot=null;
+
+function finalise(h,text,score,qKey){
+
+  h.bub.textContent=text;lastBot=text;
+
+  document.getElementById("btnPlayServer").style.display="flex";
+
+  var meta=document.createElement("div");meta.className="mmeta";
+
+  var cl=document.createElement("span");cl.textContent=Math.round(score*100)+"% confidence";
+
+  var track=document.createElement("div");track.className="conf-track";
+
+  var fill=document.createElement("div");fill.className="conf-fill";
+
+  var pct=Math.max(0,Math.min(100,score*100));
+
+  fill.style.width=pct+"%";fill.style.background=pct>=75?"var(--accent)":pct>=45?"var(--warn)":"var(--danger)";
+
+  track.appendChild(fill);
+
+  var fbw=document.createElement("div");fbw.className="fbwrap";
+
+  var key="fb_"+norm(qKey||"general"),st=pref(key,{voted:null});
+
+  var upB=document.createElement("button");upB.className="fbtn up";upB.textContent="\u25b2";upB.title="Helpful";
+
+  var dnB=document.createElement("button");dnB.className="fbtn dn";dnB.textContent="\u25bc";dnB.title="Not helpful";
+
+  function rfb(){upB.classList.toggle("on",st.voted==="up");dnB.classList.toggle("on",st.voted==="down");}
+
+  rfb();
+
+  upB.addEventListener("click",function(){st.voted=st.voted==="up"?null:"up";setPref(key,st);rfb();});
+
+  dnB.addEventListener("click",function(){st.voted=st.voted==="down"?null:"down";setPref(key,st);rfb();});
+
+  fbw.appendChild(upB);fbw.appendChild(dnB);
+
+  meta.appendChild(cl);meta.appendChild(track);meta.appendChild(fbw);
+
+  h.body.appendChild(meta);speak(text);
+
+  for(var i=chatLog.length-1;i>=0;i--){if(chatLog[i].role==="bot"){chatLog[i].text=text;break;}}
+
+}
+
+
+
+function addHistory(q){
+
+  var hl=document.getElementById("historyList"),ph=hl.querySelector("div[style]");if(ph)ph.remove();
+
+  var item=document.createElement("div");item.className="hist-item";
+
+  var ts=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+
+  item.innerHTML="<div class=\"hist-q\">"+esc(q)+"</div><div class=\"hist-ts\">"+ts+"</div>";
+
+  item.addEventListener("click",function(){send(q);});
+
+  hl.insertBefore(item,hl.firstChild);
+
+  var all=hl.querySelectorAll(".hist-item");if(all.length>8)all[all.length-1].remove();
+
+}
+
+
+
+var elAC=document.getElementById("acdrop");
+
+function showAC(q){var nq=norm(q);if(!nq){hideAC();return;}var hits=DATASET.map(function(d){return d.question;}).filter(function(s){return norm(s).indexOf(nq)!==-1;}).slice(0,7);if(!hits.length){hideAC();return;}elAC.innerHTML=hits.map(function(h){return"<div class=\"acitem\" data-q=\""+esc(h)+"\">"+esc(h)+"</div>";}).join("");elAC.style.display="block";}
+
+function hideAC(){elAC.style.display="none";elAC.innerHTML="";}
+
+
+
+function send(override){
+
+  var elTxt=document.getElementById("txtInput");
+
+  var text=(override!==undefined?override:elTxt.value).trim();
+
+  if(!text)return;
+
+  elTxt.value="";elTxt.style.height="auto";hideAC();
+
+  addMsg("user",text);addHistory(text);
+
+  var local=bestLocal(text),handle=addTyping();
+
+  if(local.answer&&local.score>=CONF_HIGH){
+
+    setTimeout(function(){finalise(handle,local.answer,local.score,local.q);trackStats(local.score);},280);
+
+    fetch(API.CHAT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+
+    fetchRecs();return;
+
+  }
+
+  var done=false;
+
+  var tmr=setTimeout(function(){if(done)return;done=true;var fb=bestLocal(text);finalise(handle,fb.answer&&fb.score>=CONF_MED?fb.answer:"The server is taking too long. Please try again or call 1-800-NEXA-BANK.",fb.answer?fb.score:0,fb.q);trackStats(fb.answer?fb.score:0);},API_TIMEOUT);
+
+  fetch(API.CHAT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})})
+
+  .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+
+  .then(function(res){if(done)return;done=true;clearTimeout(tmr);if(res&&res.answer){finalise(handle,res.answer,res.score||0,res.question||text);trackStats(res.score||0);}else{var fb=bestLocal(text);finalise(handle,fb.answer&&fb.score>=CONF_MED?fb.answer:"I could not find a good answer. Please rephrase or contact support.",fb.answer?fb.score:0,fb.q);trackStats(fb.answer?fb.score:0);}fetchRecs();})
+
+  .catch(function(){if(done)return;done=true;clearTimeout(tmr);var fb=bestLocal(text);finalise(handle,fb.answer&&fb.score>=CONF_MED?fb.answer:"Unable to reach the server. Check your connection or call 1-800-NEXA-BANK.",fb.answer?fb.score:0,fb.q);trackStats(fb.answer?fb.score:0);});
+
+}
+
+
+
+async function greet(){
+
+  var h=addTyping();
+
+  try{var r=await ft(API.GREET,{cache:"no-store"},4000);if(r.ok){var j=await r.json();h.bub.textContent=j.greeting||"Hello! I am Aria, your NexaBank AI assistant.";chatLog.push({role:"bot",text:h.bub.textContent,ts:Date.now()});document.getElementById("statusLabel").textContent="AI Online";return;}}catch(e){}
+
+  h.bub.textContent="Hello! I am Aria, your NexaBank AI assistant. Ask me anything about accounts, loans, or transfers.";
+
+  chatLog.push({role:"bot",text:h.bub.textContent,ts:Date.now()});
+
+  document.getElementById("statusLabel").textContent="Offline mode";
+
+}
+
+
+
+async function fetchRecs(){
+
+  try{var r=await ft(API.RECS,{},3000);if(!r.ok)return;var d=await r.json();if(d&&d.recommendations&&d.recommendations.length){document.getElementById("recItems").innerHTML=d.recommendations.map(function(rc){return"<div class=\"rcard\"><div class=\"rcard-title\">"+esc(rc.title)+"</div><div class=\"rcard-desc\">"+esc(rc.description)+"</div><span class=\"rcard-cta\">"+esc(rc.action)+"</span></div>";}).join("");}}catch(e){}
+
+}
+
+
+
+async function addQA(question,answer){
+
+  var pair={question:question.trim(),answer:answer.trim()};
+
+  DATASET.push(pair);document.getElementById("statKB").textContent=DATASET.length;
+
+  try{var r=await ft(API.DATASET,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pair)},5000);if(r.ok){toast("Q&A pair added to knowledge base successfully.");}else{toast("Saved locally only -- server returned "+r.status);}}catch(e){toast("Saved locally only -- server not reachable.");}
+
+}
+
+
+
+var modal=document.getElementById("modalBg");
+
+function openModal(){document.getElementById("qaQ").value="";document.getElementById("qaA").value="";modal.classList.add("open");setTimeout(function(){document.getElementById("qaQ").focus();},50);}
+
+function closeModal(){modal.classList.remove("open");}
+
+document.getElementById("btnAddQA").addEventListener("click",openModal);
+
+document.getElementById("btnCancel").addEventListener("click",closeModal);
+
+modal.addEventListener("click",function(e){if(e.target===modal)closeModal();});
+
+document.getElementById("btnSaveQA").addEventListener("click",async function(){
+
+  var q=document.getElementById("qaQ").value.trim(),a=document.getElementById("qaA").value.trim();
+
+  if(!q||!a){toast("Please fill in both question and answer.");return;}
+
+  closeModal();await addQA(q,a);
+
+});
+
+
+
+if("speechSynthesis"in window)window.speechSynthesis.getVoices();
+
+function speak(text){
+
+  if(!ttsOn||!("speechSynthesis"in window))return;
+
+  try{window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=1;u.pitch=1;var vs=window.speechSynthesis.getVoices();for(var i=0;i<vs.length;i++){if(vs[i].lang.startsWith("en")){u.voice=vs[i];break;}}window.speechSynthesis.speak(u);}catch(e){}
+
+}
+
+function refreshTTSBtn(){var icon=document.getElementById("ttsIcon");if(ttsOn){icon.innerHTML="<polygon points=\"11 5 6 9 2 9 2 15 6 15 11 19 11 5\"/><path d=\"M19.07 4.93a10 10 0 010 14.14\"/><path d=\"M15.54 8.46a5 5 0 010 7.07\"/>";document.getElementById("btnTTS").classList.add("on");}else{icon.innerHTML="<polygon points=\"11 5 6 9 2 9 2 15 6 15 11 19 11 5\"/><line x1=\"23\" y1=\"9\" x2=\"17\" y2=\"15\"/><line x1=\"17\" y1=\"9\" x2=\"23\" y2=\"15\"/>";document.getElementById("btnTTS").classList.remove("on");}}
+
+refreshTTSBtn();
+
+
+
+document.getElementById("btnPlayServer").addEventListener("click",async function(){
+
+  if(!lastBot)return;
+
+  try{var r=await fetch(API.TTS,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:lastBot})});if(!r.ok){toast("Server TTS not available.");return;}var url=URL.createObjectURL(await r.blob());var audio=new Audio(url);audio.onended=function(){URL.revokeObjectURL(url);};audio.play();}catch(e){toast("Server TTS failed.");}
+
+});
+
+
+
+var recog=null,recogOn=false;
+
+function initSTT(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;var r=new SR();r.lang="en-US";r.interimResults=false;r.maxAlternatives=1;r.onresult=function(e){var t=e.results[0][0].transcript;document.getElementById("txtInput").value=t;send(t);};r.onerror=function(){recogOn=false;setMicIdle();};r.onend=function(){recogOn=false;setMicIdle();};return r;}
+
+function setMicIdle(){var b1=document.getElementById("btnMic"),b2=document.getElementById("btnMic2");if(b1)b1.classList.remove("on");if(b2)b2.classList.remove("on");}
+
+function setMicActive(){var b1=document.getElementById("btnMic"),b2=document.getElementById("btnMic2");if(b1)b1.classList.add("on");if(b2)b2.classList.add("on");}
+
+function toggleMic(){if(!recog)recog=initSTT();if(!recog){toast("Voice input not supported. Try Chrome or Edge.");return;}if(recogOn){recog.stop();}else{try{recog.start();recogOn=true;setMicActive();}catch(e){}}}
+
+
+
+function exportChat(){
+
+  if(!chatLog.length){toast("No messages to export.");return;}
+
+  var header="NexaBank AI Assistant -- Chat Transcript\n"+"=".repeat(50)+"\nExported: "+new Date().toLocaleString()+"\n\n";
+
+  var lines=chatLog.map(function(m){return"["+new Date(m.ts).toLocaleString()+"] "+m.role.toUpperCase()+": "+m.text;});
+
+  var blob=new Blob([header+lines.join("\n")],{type:"text/plain"});
+
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="nexabank-chat-"+new Date().toISOString().slice(0,19).replace(/[T:]/g,"-")+".txt";
+
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+
+}
+
+
+
+document.getElementById("btnSend").addEventListener("click",function(){send();});
+
+var elTxt=document.getElementById("txtInput");
+
+elTxt.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}if(e.key==="Escape")hideAC();});
+
+elTxt.addEventListener("input",function(e){e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";showAC(e.target.value);});
+
+document.addEventListener("click",function(e){if(!elAC.contains(e.target)&&e.target!==elTxt)hideAC();});
+
+elAC.addEventListener("click",function(e){var item=e.target.closest(".acitem");if(!item)return;elTxt.value=item.getAttribute("data-q");hideAC();elTxt.focus();});
+
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&modal.classList.contains("open"))closeModal();if(e.key==="/"&&document.activeElement!==elTxt&&document.activeElement!==document.getElementById("qaQ")&&document.activeElement!==document.getElementById("qaA")){e.preventDefault();elTxt.focus();}});
+
+document.getElementById("btnClear").addEventListener("click",function(){elMsgs.innerHTML="";chatLog=[];stats={questions:0,totalConf:0,confCount:0};document.getElementById("statQ").textContent="0";document.getElementById("statConf").textContent="--";document.getElementById("historyList").innerHTML="<div style=\"font-size:12px;color:var(--muted);padding:4px 0\">Your history will appear here.</div>";greet();});
+
+document.getElementById("btnExport").addEventListener("click",exportChat);
+
+document.getElementById("btnTheme").addEventListener("click",function(){theme=theme==="dark"?"light":"dark";theme==="dark"?document.documentElement.setAttribute("data-theme","dark"):document.documentElement.removeAttribute("data-theme");setPref("theme",theme);});
+
+document.getElementById("btnTTS").addEventListener("click",function(){ttsOn=!ttsOn;setPref("tts",ttsOn);refreshTTSBtn();toast("Text-to-speech "+(ttsOn?"enabled":"disabled")+".");});
+
+document.getElementById("btnMic").addEventListener("click",toggleMic);
+
+document.getElementById("btnMic2").addEventListener("click",toggleMic);
+
+document.getElementById("btnReload").addEventListener("click",async function(){document.getElementById("chatSub").textContent="Reloading knowledge base...";await loadDataset();toast("Knowledge base reloaded -- "+DATASET.length+" Q&A pairs.");});
+
+document.querySelectorAll(".qchip[data-q]").forEach(function(btn){btn.addEventListener("click",function(){send(btn.getAttribute("data-q"));});});
+
+var PAGE_MAP={"Assistant":null,"Accounts":"page-accounts","Transfers":"page-transfers","Products":"page-products","Support":"page-support"};
+
+function showPage(label){
+
+  var layout=document.querySelector(".layout");
+
+  var pageId=PAGE_MAP[label];
+
+  document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
+
+  if(pageId){layout.style.display="none";document.getElementById(pageId).classList.add("active");}
+
+  else{layout.style.display="";}
+
+  document.querySelectorAll(".nav-item").forEach(function(x){x.classList.remove("active");});
+
+}
+
+document.querySelectorAll(".nav-item").forEach(function(n){n.addEventListener("click",function(){showPage(n.textContent.trim());n.classList.add("active");});});
+
+
+
+(async function(){document.getElementById("statKB").textContent=SEED.length;await loadDataset();await greet();})();
+
+</script>
+
+</body>
+
+</html>

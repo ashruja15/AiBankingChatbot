@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recommendations Connection Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; line-height: 1.6; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #444; border-radius: 4px; }
+        .success { background: rgba(34,197,94,0.15); border-color: #22c55e; }
+        .error { background: rgba(239,68,68,0.15); border-color: #ef4444; }
+        .code { background: #0a0a0a; padding: 10px; border-radius: 4px; font-size: 12px; margin: 10px 0; overflow-x: auto; }
+        h1 { color: #22c55e; }
+        h2 { color: #38bdf8; margin-top: 20px; }
+        button { background: #22c55e; color: #000; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #16a34a; }
+    </style>
+</head>
+<body>
+    <h1>🔗 Connecting Recommendations Feature</h1>
+    
+    <div class="section success">
+        <h2>Step 1: Test API Connection</h2>
+        <button onclick="testAPI()">Test API Endpoints</button>
+        <div id="apiTest"></div>
+    </div>
+
+    <div class="section success">
+        <h2>Step 2: Build User Profile</h2>
+        <button onclick="buildProfile()">Ask 5 Test Questions</button>
+        <div id="profileTest"></div>
+    </div>
+
+    <div class="section success">
+        <h2>Step 3: View Recommendations</h2>
+        <button onclick="viewRecommendations()">Fetch Recommendations</button>
+        <div id="recTest"></div>
+    </div>
+
+    <div class="section success">
+        <h2>Step 4: Test Recommendations Panel</h2>
+        <button onclick="testPanel()">Display Panel in HTML</button>
+        <div id="panelTest"></div>
+    </div>
+
+    <div class="section success" id="livePanel" style="display: none;">
+        <h2>💡 Live Recommendations Panel</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong>Personalized for You</strong>
+            <button onclick="closeLivePanel()" style="padding: 4px 8px; font-size: 12px;">✕ Close</button>
+        </div>
+        <div id="liveCards" style="display: grid; gap: 8px; margin-top: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"></div>
+    </div>
+
+    <script>
+        const log = (id, html) => {
+            document.getElementById(id).innerHTML += html + '\n';
+        };
+
+        async function testAPI() {
+            const result = document.getElementById('apiTest');
+            result.innerHTML = '';
+
+            try {
+                // Test 1: Greeting
+                const g = await fetch('/api/greeting').then(r => r.json());
+                log('apiTest', '✅ /api/greeting: Working');
+
+                // Test 2: Recommendations
+                const r = await fetch('/api/recommendations').then(r => r.json());
+                log('apiTest', `✅ /api/recommendations: Working (${r.recommendations.length} recs)`);
+
+                // Test 3: Profile
+                const p = await fetch('/api/profile').then(r => r.json());
+                log('apiTest', `✅ /api/profile: Working (${p.total_questions} questions tracked)`);
+
+                // Test 4: Chat
+                const c = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'test' })
+                }).then(r => r.json());
+                log('apiTest', `✅ /api/chat: Working (score: ${c.score})`);
+
+                result.parentElement.classList.add('success');
+            } catch (e) {
+                log('apiTest', `❌ ERROR: ${e.message}`);
+                result.parentElement.classList.add('error');
+            }
+        }
+
+        async function buildProfile() {
+            const result = document.getElementById('profileTest');
+            result.innerHTML = '';
+
+            const questions = [
+                'I want to invest my money',
+                'Can I get a personal loan?',
+                'What credit cards do you offer?',
+                'How to use mobile banking?',
+                'How to prevent fraud?'
+            ];
+
+            try {
+                for (const q of questions) {
+                    await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: q })
+                    });
+                    log('profileTest', `✅ Asked: "${q}"`);
+                    await new Promise(r => setTimeout(r, 100));
+                }
+
+                const profile = await fetch('/api/profile').then(r => r.json());
+                log('profileTest', `\n📊 Profile Built:\n  Questions: ${profile.total_questions}\n  Top Interest: ${profile.top_interest}\n  Interests: ${JSON.stringify(profile.all_interests)}`);
+                result.parentElement.classList.add('success');
+            } catch (e) {
+                log('profileTest', `❌ ERROR: ${e.message}`);
+                result.parentElement.classList.add('error');
+            }
+        }
+
+        async function viewRecommendations() {
+            const result = document.getElementById('recTest');
+            result.innerHTML = '';
+
+            try {
+                const data = await fetch('/api/recommendations').then(r => r.json());
+                
+                log('recTest', `✅ Recommendations Retrieved:\n`);
+                data.recommendations.forEach((r, i) => {
+                    log('recTest', `  ${i+1}. ${r.title}`);
+                });
+
+                result.parentElement.classList.add('success');
+            } catch (e) {
+                log('recTest', `❌ ERROR: ${e.message}`);
+                result.parentElement.classList.add('error');
+            }
+        }
+
+        async function testPanel() {
+            const result = document.getElementById('panelTest');
+            result.innerHTML = '';
+
+            try {
+                const data = await fetch('/api/recommendations').then(r => r.json());
+                
+                if (!data.recommendations || data.recommendations.length === 0) {
+                    log('panelTest', '⚠️ No recommendations to display');
+                    return;
+                }
+
+                const livePanel = document.getElementById('livePanel');
+                const liveCards = document.getElementById('liveCards');
+                liveCards.innerHTML = '';
+
+                data.recommendations.forEach(rec => {
+                    const card = document.createElement('div');
+                    card.style.cssText = `
+                        padding: 10px; 
+                        border: 1px solid rgba(34,197,94,0.3);
+                        border-radius: 8px;
+                        background: rgba(34,197,94,0.05);
+                    `;
+                    card.innerHTML = `
+                        <div style="color: #22c55e; font-weight: bold; margin-bottom: 4px;">${rec.title}</div>
+                        <div style="color: #aaa; font-size: 12px; margin-bottom: 6px;">${rec.description}</div>
+                        <div style="color: #38bdf8; font-size: 11px; background: rgba(56,189,248,0.1); padding: 2px 6px; border-radius: 4px; display: inline-block;">${rec.action}</div>
+                    `;
+                    liveCards.appendChild(card);
+                });
+
+                livePanel.style.display = 'block';
+                log('panelTest', `✅ Panel displayed with ${data.recommendations.length} recommendations`);
+                result.parentElement.classList.add('success');
+            } catch (e) {
+                log('panelTest', `❌ ERROR: ${e.message}`);
+                result.parentElement.classList.add('error');
+            }
+        }
+
+        function closeLivePanel() {
+            document.getElementById('livePanel').style.display = 'none';
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            testAPI();
+        });
+    </script>
+</body>
+</html>
